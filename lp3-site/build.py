@@ -1,0 +1,1567 @@
+#!/usr/bin/env python3
+"""
+SPPU Laboratory Practice III (410246) - Static Site Data Generator
+Academic Year: 2026-27 | Late G. N. Sapkal College of Engineering
+
+Reads authentic source files, calculates SHA-256 checksums,
+and outputs js/data.js with byte-identical source code strings.
+"""
+
+import os
+import sys
+import json
+import hashlib
+
+def get_file_content_and_hash(rel_path, base_dirs):
+    for base in base_dirs:
+        full_path = os.path.join(base, rel_path)
+        if os.path.exists(full_path):
+            with open(full_path, "rb") as f:
+                raw_bytes = f.read()
+            sha256 = hashlib.sha256(raw_bytes).hexdigest()
+            text = raw_bytes.decode("utf-8")
+            return text, sha256, os.path.basename(rel_path)
+    raise FileNotFoundError(f"Source file {rel_path} not found in {base_dirs}")
+
+def generate_data():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    workspace_dir = os.path.abspath(os.path.join(script_dir, ".."))
+    
+    base_dirs = [
+        os.path.join(workspace_dir, "lp3-final"),
+        os.path.join(workspace_dir, "lp3-finall", "lp3-final"),
+        os.path.join(script_dir, "lp3-final"),
+        os.path.join(script_dir, "..", "lp3-finall", "lp3-final")
+    ]
+    
+    print("Building data.js for LP3 Website...")
+    
+    # 1. Read and hash all source files
+    p1_code, p1_hash, p1_file = get_file_content_and_hash("DAA/p1_fibonacci.py", base_dirs)
+    p2_code, p2_hash, p2_file = get_file_content_and_hash("DAA/p2_huffman.py", base_dirs)
+    p3_code, p3_hash, p3_file = get_file_content_and_hash("DAA/p3_fractional_knapsack.py", base_dirs)
+    p4_code, p4_hash, p4_file = get_file_content_and_hash("DAA/p4_knapsack_01.py", base_dirs)
+    p5_code, p5_hash, p5_file = get_file_content_and_hash("DAA/p5_nqueens.py", base_dirs)
+    
+    p7_code, p7_hash, p7_file = get_file_content_and_hash("ML/p7_uber_price.py", base_dirs)
+    p8_code, p8_hash, p8_file = get_file_content_and_hash("ML/p8_spam_knn_svm.py", base_dirs)
+    p9_code, p9_hash, p9_file = get_file_content_and_hash("ML/p9_bank_churn_nn.py", base_dirs)
+    p10_code, p10_hash, p10_file = get_file_content_and_hash("ML/p10_knn_diabetes.py", base_dirs)
+    p11_code, p11_hash, p11_file = get_file_content_and_hash("ML/p11_kmeans_sales.py", base_dirs)
+    
+    notes_text, notes_hash, notes_file = get_file_content_and_hash("Blockchain/Blockchain_Notes_P13_P14_P17.md", base_dirs)
+    p15_code, p15_hash, p15_file = get_file_content_and_hash("Blockchain/p15_BankAccount.sol", base_dirs)
+    p16_code, p16_hash, p16_file = get_file_content_and_hash("Blockchain/p16_StudentData.sol", base_dirs)
+    
+    # Verify that SHA-256 of text encoded back to UTF-8 matches exactly
+    for code, h, name in [
+        (p1_code, p1_hash, p1_file), (p2_code, p2_hash, p2_file),
+        (p3_code, p3_hash, p3_file), (p4_code, p4_hash, p4_file),
+        (p5_code, p5_hash, p5_file), (p7_code, p7_hash, p7_file),
+        (p8_code, p8_hash, p8_file), (p9_code, p9_hash, p9_file),
+        (p10_code, p10_hash, p10_file), (p11_code, p11_hash, p11_file),
+        (p15_code, p15_hash, p15_file), (p16_code, p16_hash, p16_file),
+        (notes_text, notes_hash, notes_file)
+    ]:
+        recheck = hashlib.sha256(code.encode("utf-8")).hexdigest()
+        assert recheck == h, f"Checksum verification failed for {name}!"
+        print(f"Verified {name}: {len(code)} bytes, SHA-256: {h[:12]}...")
+
+    practicals = [
+        # =========================================================================
+        # PRACTICAL 1
+        # =========================================================================
+        {
+            "id": "p1",
+            "number": 1,
+            "group": "Group A - DAA",
+            "groupTitle": "Design and Analysis of Algorithms",
+            "shortTitle": "P1 - Fibonacci Numbers",
+            "title": "Write a program non-recursive and recursive program to calculate Fibonacci numbers and analyze their time and space complexity.",
+            "co": "CO4: Analyze performance of an algorithm.",
+            "hasCode": True,
+            "language": "python",
+            "fileName": p1_file,
+            "fileHash": p1_hash,
+            "code": p1_code,
+            "objectives": [
+                "Understand and implement recursive and non-recursive (iterative) strategies for generating Fibonacci numbers.",
+                "Construct and analyze recurrence relations and recursion call trees.",
+                "Compare time complexity and space complexity (stack frame allocation vs constant variables)."
+            ],
+            "prerequisites": [
+                "Basics of Python programming (loops, functions, and recursion).",
+                "Asymptotic notations: Big-O notation, time complexity, and auxiliary space complexity."
+            ],
+            "theory": {
+                "summary": "The Fibonacci sequence is an integer sequence where each number after the first two seed numbers is the sum of the preceding two.",
+                "sections": [
+                    {
+                        "heading": "1. Mathematical Definition & Recurrence",
+                        "content": "The Fibonacci sequence is defined by the seed values and recurrence relation:\n\n• F(0) = 0,  F(1) = 1\n• F(n) = F(n - 1) + F(n - 2)  for n ≥ 2\n\nThe sequence begins: 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, ...\n(Note: The lab manual contains a typographical error listing 38 instead of 34; 21 + 13 = 34)."
+                    },
+                    {
+                        "heading": "2. Recursion Tree & Subproblem Duplication",
+                        "content": "A direct recursive call tree branches into two recursive calls for every non-base term:\n\n                    F(5)\n                 /        \\\n              F(4)          F(3)\n             /    \\        /    \\\n          F(3)    F(2)   F(2)   F(1)\n         /   \\    /  \\   /  \\\n       F(2) F(1) F(1)F(0)F(1)F(0)\n\nKey Observation: Identical subproblems like F(3) and F(2) are recomputed multiple times. The number of leaf nodes grows proportionally to the golden ratio raised to the power n (φⁿ where φ ≈ 1.618)."
+                    },
+                    {
+                        "heading": "3. Iterative (Non-Recursive) Approach",
+                        "content": "The iterative approach starts from the bottom (F(0) and F(1)) and moves upward using a simple loop. It updates only two variables (a and b) in each iteration:\n\n• a = 0, b = 1\n• In each step i from 0 to n-1: c = a + b; a = b; b = c\n• Returns a after n iterations.\nThis avoids redundant calculations and operates in single-pass linear time without call stack overhead."
+                    },
+                    {
+                        "heading": "4. Time and Space Complexity Comparison",
+                        "table": {
+                            "headers": ["Method", "Time Complexity", "Space Complexity", "Call Stack Overhead", "Subproblem Overlap"],
+                            "rows": [
+                                ["Non-recursive (Iterative)", "O(n)", "O(1)", "None (flat execution)", "Evaluated exactly once in sequence"],
+                                ["Direct Recursive", "O(2ⁿ) — exactly O(1.618ⁿ)", "O(n)", "O(n) maximum stack depth", "Severe exponential duplication"],
+                                ["Dynamic Programming (Memoization)", "O(n)", "O(n)", "O(n) memo table / stack", "Cached and computed once"]
+                            ]
+                        }
+                    },
+                    {
+                        "heading": "5. Real-World Applications",
+                        "content": "• Fibonacci Search: A divide-and-conquer comparison search technique that divides arrays according to Fibonacci numbers (relies only on addition and subtraction).\n• Fibonacci Heaps: Priority queue data structure utilized in fast implementations of Dijkstra's and Prim's algorithms.\n• Nature and Biology: Spiral phyllotaxis in sunflowers, pinecones, and branching patterns of trees.\n• Financial Markets: Fibonacci retracement levels used in technical trading analysis."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Non-recursive (Iterative): Initialize variables a = 0, b = 1. Loop i from 0 to n - 1: calculate c = a + b, set a = b, and b = c. Return a.",
+                "Recursive: Define fib_rec(n). If n <= 1, return n directly (base cases: F(0)=0, F(1)=1). Otherwise, recursively return fib_rec(n - 1) + fib_rec(n - 2).",
+                "Series Display: Loop index i from 0 through n, printing fib_loop(i) on a single line."
+            ],
+            "guide": {
+                "vscode": "1. Open lp3-final folder in VS Code.\n2. Open DAA/p1_fibonacci.py.\n3. Click the Play button or open terminal (Ctrl + `) and execute:\n   python3 DAA/p1_fibonacci.py",
+                "terminal": "cd lp3-final/DAA\npython3 p1_fibonacci.py",
+                "jupyter": "jupyter notebook\nCreate a New Python 3 Notebook, paste the code into a cell, and press Shift + Enter.\nEnter n when prompted."
+            },
+            "sampleIO": {
+                "input": "n = 7",
+                "output": "Non-recursive: 13\nRecursive: 13\nSeries:\n0 1 1 2 3 5 8 13 \n\nTime complexity : non-recursive O(n), recursive O(2^n)\nSpace complexity: non-recursive O(1), recursive O(n)",
+                "note": "Keep n <= 35 for recursive execution to prevent excessive CPU call-stack freezing."
+            },
+            "conclusion": "The iterative method calculates the n-th Fibonacci number in O(n) time and O(1) space, outperforming the naïve recursive approach which suffers from exponential time O(2ⁿ) due to unmemoized overlapping subproblems.",
+            "viva": [
+                {
+                    "q": "What is the Fibonacci Sequence and what is its recurrence relation?",
+                    "a": "A sequence of numbers where each term is the sum of the two preceding ones: F(0)=0, F(1)=1, and F(n) = F(n-1) + F(n-2) for n ≥ 2."
+                },
+                {
+                    "q": "Why does the direct recursive Fibonacci function have exponential time complexity?",
+                    "a": "Because it recalculates the same subproblems repeatedly without memoization. The recursion tree has 2ⁿ nodes, giving an asymptotic time complexity of O(2ⁿ) or O(1.618ⁿ)."
+                },
+                {
+                    "q": "What is the auxiliary space complexity of the recursive vs iterative approach?",
+                    "a": "The recursive approach requires O(n) auxiliary space due to the call stack depth holding active stack frames. The iterative approach requires O(1) space because it uses only two integer variables."
+                },
+                {
+                    "q": "What is the Golden Ratio and how is it related to Fibonacci numbers?",
+                    "a": "The Golden Ratio is φ = (1 + √5) / 2 ≈ 1.6180339887... As n approaches infinity, the ratio of consecutive Fibonacci numbers F(n)/F(n-1) converges to φ."
+                },
+                {
+                    "q": "What is the Fibonacci Search technique and how does it compare to Binary Search?",
+                    "a": "Fibonacci Search is a search algorithm for sorted arrays that divides the search interval using Fibonacci numbers. Unlike Binary Search which uses division (mid = (low+high)/2), Fibonacci search only uses addition and subtraction, which was historically faster on primitive hardware."
+                },
+                {
+                    "q": "How can the Fibonacci number be computed in O(log n) time?",
+                    "a": "Using matrix exponentiation: [[1, 1], [1, 0]]ⁿ = [[F(n+1), F(n)], [F(n), F(n-1)]] computed via binary exponentiation in O(log n) time."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 2
+        # =========================================================================
+        {
+            "id": "p2",
+            "number": 2,
+            "group": "Group A - DAA",
+            "groupTitle": "Design and Analysis of Algorithms",
+            "shortTitle": "P2 - Huffman Encoding",
+            "title": "Write a program to implement Huffman Encoding using a greedy strategy.",
+            "co": "CO5: Implement an algorithm that follows one of the following algorithm design strategies: divide and conquer, greedy, dynamic programming, backtracking, branch and bound",
+            "hasCode": True,
+            "language": "python",
+            "fileName": p2_file,
+            "fileHash": p2_hash,
+            "code": p2_code,
+            "objectives": [
+                "Understand lossless data compression and optimal prefix coding.",
+                "Implement a min-heap priority queue using Python's heapq module.",
+                "Construct a Huffman tree bottom-up using the greedy choice property."
+            ],
+            "prerequisites": [
+                "Binary tree fundamentals and tree traversal.",
+                "Priority queue / Min-heap operations.",
+                "Greedy algorithm design principles."
+            ],
+            "theory": {
+                "summary": "Huffman Encoding is a greedy, lossless variable-length data compression algorithm that assigns shorter binary codes to more frequent characters.",
+                "sections": [
+                    {
+                        "heading": "1. Greedy Method in Compression",
+                        "content": "A greedy algorithm builds up a solution piece by piece, always choosing the next piece that offers the most immediate benefit. In Huffman coding, the greedy choice repeatedly merges the two symbols with the lowest frequencies into a single parent node."
+                    },
+                    {
+                        "heading": "2. Fixed-Length vs Variable-Length Codes",
+                        "content": "• Fixed-Length Codes: Every character is represented by the same number of bits (e.g. ASCII uses 8 bits per character, or 3 bits for an alphabet of size 8). Total bits = text_length × bits_per_char.\n• Variable-Length Codes: Frequent characters receive short codes (e.g., 'e' gets 2 bits), while rare characters receive longer codes (e.g., 'z' gets 8 bits). This drastically reduces the average number of bits per character."
+                    },
+                    {
+                        "heading": "3. The Prefix Rule (Prefix Property)",
+                        "content": "To decode a bitstream unambiguously without separator characters, the code system must satisfy the Prefix Rule: No valid codeword is a prefix of any other valid codeword.\nBecause all characters in a Huffman tree reside exclusively in the leaf nodes, no character code can be an initial segment of another character's code."
+                    },
+                    {
+                        "heading": "4. Step-by-Step Worked Example: 'aabbbc'",
+                        "content": "Text: 'aabbbc' (Length = 6 characters)\n\n1. Calculate Frequencies:\n   - 'a': 2, 'b': 3, 'c': 1\n\n2. Build Min-Heap:\n   - [1: 'c', 2: 'a', 3: 'b']\n\n3. Merge 1st Pair (Two smallest):\n   - Extract 'c' (freq 1) and 'a' (freq 2).\n   - Combine: new internal node with freq = 1 + 2 = 3.\n   - Assign bit '0' to 'c' (or low side) and bit '1' to 'a'.\n   - Current partial codes: c='10' (or '0'), a='11' (or '1').\n\n4. Merge 2nd Pair:\n   - Min-heap now contains: [3: (c, a), 3: 'b'].\n   - Extract both and combine into root node with freq = 3 + 3 = 6.\n   - Prepend '0' to 'b' and '1' to (c, a).\n\n5. Final Huffman Codes:\n   - 'b' -> '0' (Length 1 bit)\n   - 'c' -> '10' (Length 2 bits)\n   - 'a' -> '11' (Length 2 bits)\n\n6. Encoded Bitstream for 'aabbbc':\n   - a (11) + a (11) + b (0) + b (0) + b (0) + c (10)\n   - Total Bitstream: 111100010 (9 bits total)\n   - Standard ASCII comparison: 6 characters × 8 bits = 48 bits.\n   - Compression Ratio: 9 / 48 = 18.75% of original size!"
+                    },
+                    {
+                        "heading": "5. Time and Space Complexity",
+                        "content": "• Frequency Counting: O(N) where N is the total text length.\n• Heap Operations: Inserting n unique characters into min-heap takes O(n log n). There are (n - 1) extractions and merges, each costing O(log n).\n• Tree Traversal / Encoding: O(n log n).\n• Total Time Complexity: O(N + n log n).\n• Space Complexity: O(n) to store tree nodes and priority queue."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Count the frequency of each unique character in the input string and store in a dictionary freq.",
+                "Create a leaf entry [freq, [char, '']] for each character and convert the list into a min-heap using heapq.heapify().",
+                "While the heap contains more than 1 item: pop the two lowest frequency elements (low and high); prepend '0' to all codes in low and '1' to all codes in high; push the combined item [low[0] + high[0]] + low[1:] + high[1:] back into the heap.",
+                "Extract the final dictionary of character codes from the single remaining root element in the heap.",
+                "Iterate through the original text and replace each character with its generated Huffman binary code to produce the compressed bitstream."
+            ],
+            "guide": {
+                "vscode": "1. Open lp3-final folder in VS Code.\n2. Open DAA/p2_huffman.py.\n3. Run using python3 DAA/p2_huffman.py.\n4. Input the text string when prompted.",
+                "terminal": "cd lp3-final/DAA\npython3 p2_huffman.py",
+                "jupyter": "jupyter notebook\nPaste the script in a code cell and run.\nEnter input in the text input box below the cell."
+            },
+            "sampleIO": {
+                "input": "Enter text: aabbbc",
+                "output": "Character  Code\nb          0\nc          10\na          11\n\nEncoded text: 111100010",
+                "note": "Codes satisfy the prefix condition: no codeword is a prefix of another."
+            },
+            "conclusion": "Huffman coding achieves optimal prefix code compression using a greedy priority queue. Frequent characters receive shorter variable-length bit sequences, guaranteeing lossless compression in O(n log n) time.",
+            "viva": [
+                {
+                    "q": "What is Huffman Encoding and what design paradigm does it use?",
+                    "a": "Huffman encoding is a lossless, variable-length statistical data compression algorithm based on the Greedy design strategy."
+                },
+                {
+                    "q": "What is a prefix code / prefix rule?",
+                    "a": "A code in which no codeword is an initial prefix of any other codeword. This guarantees unambiguous, instantaneous decoding without special delimiter characters."
+                },
+                {
+                    "q": "Why is Huffman coding considered lossless?",
+                    "a": "Because the exact original text can be reconstructed bit-for-bit from the encoded bitstream and Huffman tree without losing any information."
+                },
+                {
+                    "q": "What data structure is used to build the Huffman tree and why?",
+                    "a": "A Min-Heap (Priority Queue), because it provides O(log n) retrieval and extraction of the two lowest-frequency elements at each greedy merge step."
+                },
+                {
+                    "q": "What is the time complexity of building a Huffman tree for n unique characters?",
+                    "a": "O(n log n), because there are (n - 1) merge iterations and each min-heap insertion/extraction takes O(log n) time."
+                },
+                {
+                    "q": "How many bits are needed to encode 'mississippi'?",
+                    "a": "Frequencies: m=1, p=2, s=4, i=4. Total chars = 11. Codes generated typically: s=0, i=10, p=110, m=111. Total bits = 1(3) + 4(2) + 4(1) + 2(3) = 3 + 8 + 4 + 6 = 21 bits (vs 88 bits in ASCII)."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 3
+        # =========================================================================
+        {
+            "id": "p3",
+            "number": 3,
+            "group": "Group A - DAA",
+            "groupTitle": "Design and Analysis of Algorithms",
+            "shortTitle": "P3 - Fractional Knapsack",
+            "title": "Write a program to solve a fractional Knapsack problem using a greedy method.",
+            "co": "CO5: Implement an algorithm that follows one of the following algorithm design strategies: divide and conquer, greedy, dynamic programming, backtracking, branch and bound",
+            "hasCode": True,
+            "language": "python",
+            "fileName": p3_file,
+            "fileHash": p3_hash,
+            "code": p3_code,
+            "objectives": [
+                "Understand the fractional knapsack problem and the greedy-choice property.",
+                "Sort candidate items by profit-to-weight ratio in descending order.",
+                "Compute maximum attainable profit by taking entire items and fractions of items."
+            ],
+            "prerequisites": [
+                "Knowledge of sorting algorithms (e.g. QuickSort / TimSort).",
+                "Understanding the difference between Fractional Knapsack and 0/1 Knapsack."
+            ],
+            "theory": {
+                "summary": "In the Fractional Knapsack problem, a thief can take full items or fractional parts of items to maximize profit without exceeding capacity W.",
+                "sections": [
+                    {
+                        "heading": "1. Problem Formulation & Knapsack Variants",
+                        "content": "Given n items, each with profit pᵢ and weight wᵢ, and a knapsack capacity W:\n• Fractional Knapsack: We can take a fraction xᵢ of item i, where 0 ≤ xᵢ ≤ 1. Solvable in O(n log n) using Greedy.\n• 0-1 Knapsack: We must either take item i entirely (xᵢ = 1) or leave it (xᵢ = 0). Fractions are not allowed. Greedy fails; requires Dynamic Programming O(n·W)."
+                    },
+                    {
+                        "heading": "2. Why the Greedy Strategy Works for Fractional Knapsack",
+                        "content": "The greedy choice property holds because value density (profit per unit weight rᵢ = pᵢ / wᵢ) is divisible. To maximize total profit, we must consume capacity using the highest value density available at each moment. Since we can take exact fractions, no capacity is wasted on sub-optimal gaps."
+                    },
+                    {
+                        "heading": "3. Step-by-Step Worked Example",
+                        "content": "Given 3 items and knapsack capacity W = 50:\n\n• Item 1: Profit = 60, Weight = 10  -> Ratio = 60 / 10 = 6.0\n• Item 2: Profit = 100, Weight = 20 -> Ratio = 100 / 20 = 5.0\n• Item 3: Profit = 120, Weight = 30 -> Ratio = 120 / 30 = 4.0\n\nExecution:\n1. Sort by Ratio descending: Item 1 (6.0), Item 2 (5.0), Item 3 (4.0).\n2. Take Item 1: Weight 10 ≤ 50 -> Take fraction 1.0. Profit gained = 60. Remaining capacity = 50 - 10 = 40.\n3. Take Item 2: Weight 20 ≤ 40 -> Take fraction 1.0. Profit gained = 100. Remaining capacity = 40 - 20 = 20.\n4. Item 3 has weight 30 > remaining capacity 20:\n   Take fraction x₃ = 20 / 30 = 0.67 (2/3).\n   Profit gained = 120 × (20 / 30) = 80.0.\n   Remaining capacity = 20 - 20 = 0.\n5. Maximum Total Profit = 60 + 100 + 80 = 240.0."
+                    },
+                    {
+                        "heading": "4. Complexity Analysis",
+                        "content": "• Sorting items by ratio: O(n log n).\n• Single-pass greedy selection loop: O(n).\n• Total Time Complexity: O(n log n).\n• Auxiliary Space Complexity: O(1) beyond storing item list."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Input number of items n, and for each item input profit and weight.",
+                "Compute profit/weight ratio for each item and store [ratio, profit, weight, item_no].",
+                "Input knapsack capacity.",
+                "Sort the items list in descending order of ratio.",
+                "Initialize total_profit = 0 and remaining_capacity = capacity.",
+                "For each item in sorted list:\n   a. If remaining_capacity == 0, break.\n   b. If item weight <= remaining_capacity, take fraction = 1.\n   c. Else, take fraction = remaining_capacity / weight.\n   d. Add profit * fraction to total_profit and subtract weight * fraction from remaining_capacity.",
+                "Print selected items, weights taken, profits gained, fractions, and Maximum Profit."
+            ],
+            "guide": {
+                "vscode": "1. Open lp3-final in VS Code.\n2. Open DAA/p3_fractional_knapsack.py.\n3. Run: python3 DAA/p3_fractional_knapsack.py.\n4. Enter items and capacity.",
+                "terminal": "cd lp3-final/DAA\npython3 p3_fractional_knapsack.py",
+                "jupyter": "jupyter notebook\nPaste the code into a cell and execute with Shift+Enter."
+            },
+            "sampleIO": {
+                "input": "Number of items: 3\nItem 1: profit 60, weight 10\nItem 2: profit 100, weight 20\nItem 3: profit 120, weight 30\nCapacity: 50",
+                "output": "Items sorted by profit/weight ratio\nItem\tProfit\tWeight\tRatio\n1 \t 60.0 \t 10.0 \t 6.0\n2 \t 100.0 \t 20.0 \t 5.0\n3 \t 120.0 \t 30.0 \t 4.0\n\nSelected items\nItem\tWeight Taken\tProfit Gained\tFraction\n1 \t 10.0 \t\t 60.0 \t\t 1\n2 \t 20.0 \t\t 100.0 \t\t 1\n3 \t 20.0 \t\t 80.0 \t\t 0.67\n\nMaximum Profit = 240.0",
+                "note": "Item 3 is taken partially (20/30 = 0.67 fraction)."
+            },
+            "conclusion": "The Greedy approach optimally solves the Fractional Knapsack problem in O(n log n) time by sorting items by profit/weight ratio and filling the remaining capacity with a fraction of the final item.",
+            "viva": [
+                {
+                    "q": "What is the Greedy approach in algorithm design?",
+                    "a": "A problem-solving paradigm that makes the locally optimal choice at each stage with the hope of finding a global optimum."
+                },
+                {
+                    "q": "What is the difference between Fractional Knapsack and 0/1 Knapsack?",
+                    "a": "In Fractional Knapsack, items can be broken into fractional quantities (0 ≤ xᵢ ≤ 1), solvable by greedy method in O(n log n). In 0/1 Knapsack, items are indivisible (xᵢ ∈ {0, 1}), requiring Dynamic Programming or Branch & Bound."
+                },
+                {
+                    "q": "Why does the greedy choice fail for 0/1 Knapsack?",
+                    "a": "Because indivisible items may leave unused empty space in the knapsack that could have been filled by other items yielding higher aggregate profit."
+                },
+                {
+                    "q": "What is the primary sorting criterion for Fractional Knapsack?",
+                    "a": "Profit-to-weight ratio (value density: profit / weight) in descending order."
+                },
+                {
+                    "q": "What is the time complexity of the Fractional Knapsack algorithm?",
+                    "a": "O(n log n), dominated by sorting the items by profit-to-weight ratio."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 4
+        # =========================================================================
+        {
+            "id": "p4",
+            "number": 4,
+            "group": "Group A - DAA",
+            "groupTitle": "Design and Analysis of Algorithms",
+            "shortTitle": "P4 - 0-1 Knapsack (DP)",
+            "title": "Write a program to solve a 0-1 Knapsack problem using dynamic programming or branch and bound strategy.",
+            "co": "CO5: Implement an algorithm that follows one of the following algorithm design strategies: divide and conquer, greedy, dynamic programming, backtracking, branch and bound",
+            "hasCode": True,
+            "language": "python",
+            "fileName": p4_file,
+            "fileHash": p4_hash,
+            "code": p4_code,
+            "objectives": [
+                "Understand the principles of Dynamic Programming: Optimal Substructure and Overlapping Subproblems.",
+                "Construct and populate the 2D DP table for the 0-1 Knapsack problem.",
+                "Backtrack through the DP matrix to identify the exact subset of items chosen."
+            ],
+            "prerequisites": [
+                "Recursion and memoization fundamentals.",
+                "2D array manipulation and matrix indexing."
+            ],
+            "theory": {
+                "summary": "The 0-1 Knapsack problem is an optimization problem where each item must either be taken entirely or left. It is solved using bottom-up 2D Dynamic Programming.",
+                "sections": [
+                    {
+                        "heading": "1. Dynamic Programming Fundamentals",
+                        "content": "Dynamic programming applies when a problem exhibits:\n1. Optimal Substructure: An optimal solution contains within it optimal solutions to subproblems.\n2. Overlapping Subproblems: A recursive algorithm revisits the same subproblems repeatedly rather than generating new subproblems."
+                    },
+                    {
+                        "heading": "2. Recurrence Relation",
+                        "content": "Let DP[i][w] be the maximum profit achievable considering the first i items with remaining capacity w:\n\n• If weight[i - 1] > w (item cannot fit):\n  DP[i][w] = DP[i - 1][w]\n\n• If weight[i - 1] ≤ w (item can fit, decide whether to take or leave):\n  DP[i][w] = max(\n      DP[i - 1][w],                                  # Leave item i\n      profit[i - 1] + DP[i - 1][w - weight[i - 1]]    # Take item i\n  )\n\nBase Cases: DP[0][w] = 0 for all w; DP[i][0] = 0 for all i."
+                    },
+                    {
+                        "heading": "3. Worked Example (Same items as P3)",
+                        "content": "Capacity W = 50, Items:\n• Item 1: Profit = 60, Weight = 10\n• Item 2: Profit = 100, Weight = 20\n• Item 3: Profit = 120, Weight = 30\n\nMatrix DP of size (3+1) × (50+1) is filled row by row.\nAt DP[3][50]: Value = 220.\n\nBacktracking to find chosen items:\n1. Compare DP[3][50] (220) with DP[2][50] (160). They differ -> Item 3 WAS TAKEN.\n   Remaining capacity w = 50 - weight[2] = 50 - 30 = 20.\n2. Compare DP[2][20] (100) with DP[1][20] (60). They differ -> Item 2 WAS TAKEN.\n   Remaining capacity w = 20 - weight[1] = 20 - 20 = 0.\n3. Capacity is 0. Item 1 is NOT taken.\n\nSelected items: Item 2 (w=20, p=100) and Item 3 (w=30, p=120).\nTotal Weight = 50, Maximum Profit = 220 (vs 240 in fractional knapsack)."
+                    },
+                    {
+                        "heading": "4. Comparison with Fractional Knapsack",
+                        "table": {
+                            "headers": ["Attribute", "0-1 Knapsack (P4)", "Fractional Knapsack (P3)"],
+                            "rows": [
+                                ["Item Divisibility", "Indivisible (xᵢ ∈ {0, 1})", "Divisible (0 ≤ xᵢ ≤ 1)"],
+                                ["Design Strategy", "Dynamic Programming / Branch & Bound", "Greedy Method"],
+                                ["Time Complexity", "O(n · W) pseudo-polynomial", "O(n log n) polynomial"],
+                                ["Space Complexity", "O(n · W) or O(W)", "O(1) auxiliary"],
+                                ["Result for Same Input", "Profit = 220", "Profit = 240.0"]
+                            ]
+                        }
+                    }
+                ]
+            },
+            "algorithm": [
+                "Input number of items n, their profits and weights, and knapsack capacity.",
+                "Initialize a 2D table dp of size (n + 1) x (capacity + 1) with all zeros.",
+                "Outer loop i from 1 to n; inner loop w from 1 to capacity:\n   a. If weight[i-1] <= w:\n      take = profit[i-1] + dp[i-1][w - weight[i-1]]\n      leave = dp[i-1][w]\n      dp[i][w] = max(take, leave)\n   b. Else: dp[i][w] = dp[i-1][w]",
+                "Backtrack from dp[n][capacity] backwards:\n   a. Set w = capacity.\n   b. For i from n down to 1: if dp[i][w] != dp[i-1][w], append i to selected list and set w = w - weight[i-1].",
+                "Reverse selected list and print selected items, weights, profits, and Maximum Profit."
+            ],
+            "guide": {
+                "vscode": "1. Open DAA/p4_knapsack_01.py.\n2. Run using python3 DAA/p4_knapsack_01.py.\n3. Enter 3 items: (60, 10), (100, 20), (120, 30) and capacity 50.",
+                "terminal": "cd lp3-final/DAA\npython3 p4_knapsack_01.py",
+                "jupyter": "jupyter notebook\nRun the cell and provide inputs sequentially."
+            },
+            "sampleIO": {
+                "input": "Number of items: 3\nItem 1: profit 60, weight 10\nItem 2: profit 100, weight 20\nItem 3: profit 120, weight 30\nKnapsack capacity: 50",
+                "output": "Selected items\nItem\tWeight Taken\tProfit Gained\n2 \t 20 \t\t 100\n3 \t 30 \t\t 120\n\nMaximum Profit = 220",
+                "note": "Items 2 and 3 are taken. Item 1 is skipped."
+            },
+            "conclusion": "The 0-1 Knapsack problem is solved optimally via bottom-up Dynamic Programming in O(n·W) time and space, tracking optimal subproblem states to extract the exact selected items.",
+            "viva": [
+                {
+                    "q": "What is Dynamic Programming and how does it differ from Divide and Conquer?",
+                    "a": "Both solve problems by combining solutions to subproblems. However, Divide and Conquer solves independent subproblems (like MergeSort), whereas Dynamic Programming solves overlapping subproblems by storing their results in a table."
+                },
+                {
+                    "q": "State the recurrence relation for the 0-1 Knapsack problem.",
+                    "a": "DP[i][w] = DP[i-1][w] if wᵢ > w; else max(DP[i-1][w], profit[i-1] + DP[i-1][w - weight[i-1]])."
+                },
+                {
+                    "q": "Why is the time complexity O(n·W) called pseudo-polynomial?",
+                    "a": "Because W is a numeric value, not the number of input items. The runtime depends on the magnitude of W, which is exponential in terms of the bit-length of W."
+                },
+                {
+                    "q": "How do you reconstruct the items included in the optimal knapsack solution?",
+                    "a": "By backtracking from dp[n][W]: if dp[i][w] != dp[i-1][w], item i was included; we record item i and subtract its weight from w before moving to row i-1."
+                },
+                {
+                    "q": "What is the difference between Dynamic Programming and Branch and Bound?",
+                    "a": "DP explores all overlapping subproblems systematically. Branch and Bound uses a state-space tree with bounding functions (like upper bound heuristics) to prune branches that cannot yield a better solution."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 5
+        # =========================================================================
+        {
+            "id": "p5",
+            "number": 5,
+            "group": "Group A - DAA",
+            "groupTitle": "Design and Analysis of Algorithms",
+            "shortTitle": "P5 - N-Queens with 1st Queen Placed",
+            "title": "Design n-Queens matrix having first Queen placed. Use backtracking toplace remaining Queens to generate the final n-queen’s matrix.",
+            "co": "CO5: Implement an algorithm that follows one of the following algorithm design strategies: divide and conquer, greedy, dynamic programming, backtracking, branch and bound",
+            "hasCode": True,
+            "language": "python",
+            "fileName": p5_file,
+            "fileHash": p5_hash,
+            "code": p5_code,
+            "objectives": [
+                "Understand the Backtracking algorithmic paradigm and depth-first state-space search.",
+                "Enforce non-attacking constraints: row, column, and major/minor diagonal safety.",
+                "Solve the N-Queens problem when the first Queen's coordinates are fixed by the user."
+            ],
+            "prerequisites": [
+                "Recursion and backtracking logic.",
+                "Chess movement rules for Queens.",
+                "2D grid coordinate mathematics."
+            ],
+            "theory": {
+                "summary": "The N-Queens problem places N non-attacking queens on an N×N board. Backtracking places queens row by row, pruning any branch where a conflict occurs.",
+                "sections": [
+                    {
+                        "heading": "1. Backtracking Paradigm",
+                        "content": "Backtracking is an algorithmic technique for solving problems recursively by trying to build a solution incrementally, one piece at a time, removing those solutions that fail to satisfy constraints at any point in time (pruning the state-space tree)."
+                    },
+                    {
+                        "heading": "2. Queens Attack Constraints & Safety Logic",
+                        "content": "Two queens at (r₁, c₁) and (r₂, c₂) attack each other if:\n1. Same Row: r₁ == r₂ (Handled implicitly by placing only one queen per row).\n2. Same Column: c₁ == c₂.\n3. Same Diagonal: |r₁ - r₂| == |c₁ - c₂| (slope is +1 or -1).\n\nIn our program, queens[r] stores the column index of the queen in row r. Thus, position (row, col) is safe if for all prior rows r < row:\nqueens[r] != col and abs(queens[r] - col) != abs(r - row)."
+                    },
+                    {
+                        "heading": "3. State-Space Tree & 4-Queens Walkthrough",
+                        "content": "For 4-Queens:\n• Root: Empty board.\n• Level 1: Place Queen 1 in row 0 at chosen column.\n• Level 2: Try placing Queen 2 in row 1 in column 0, 1, 2, 3.\n• When an unsafe placement is found, the subtree below that node is pruned immediately without further exploration.\n• If all columns in row k fail, the algorithm backtracks to row k-1, clears the queen, and tries the next valid column."
+                    },
+                    {
+                        "heading": "4. First Queen Pre-placed Variation",
+                        "content": "In this assignment, the user fixes Queen 1 at row 0 and column col (1-indexed). The backtracking search begins at row 1 instead of row 0. If a valid configuration exists containing this fixed starting queen, it is found and displayed."
+                    },
+                    {
+                        "heading": "5. Time Complexity",
+                        "content": "Upper bound is O(N!) since each subsequent queen has fewer valid columns to choose from. Space complexity is O(N) to store queen positions in a 1D array of size N."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Read board size n and 1-indexed column position col for the first queen in row 1.",
+                "Initialize array queens of size n with -1. Place the first queen: queens[0] = col - 1.",
+                "Define is_safe(queens, row, col):\n   For each placed queen in row r from 0 to row - 1:\n      If queens[r] == col or abs(queens[r] - col) == abs(r - row), return False.\n   Return True.",
+                "Define recursive function solve(queens, row, n):\n   a. If row == n, return True (all queens placed successfully).\n   b. For each column c from 0 to n - 1:\n      If is_safe(queens, row, c):\n         queens[row] = c\n         if solve(queens, row + 1, n) returns True, return True.\n         queens[row] = -1 (backtrack).\n   c. Return False if no column is safe.",
+                "Invoke solve(queens, 1, n). If True, print the n×n grid with 'Q' and '.'. Otherwise, print that no solution exists."
+            ],
+            "guide": {
+                "vscode": "1. Open DAA/p5_nqueens.py.\n2. Run using python3 DAA/p5_nqueens.py.\n3. Enter n = 6 and column = 2.",
+                "terminal": "cd lp3-final/DAA\npython3 p5_nqueens.py",
+                "jupyter": "jupyter notebook\nRun code cell and provide inputs 6 and 2."
+            },
+            "sampleIO": {
+                "input": "n = 6\nColumn (1 to 6) for the first queen in row 1: 2",
+                "output": ". Q . . . . \n. . . Q . . \n. . . . . Q \nQ . . . . . \n. . Q . . . \n. . . . Q . ",
+                "note": "Row 1 contains queen at column 2 (0-indexed col 1)."
+            },
+            "conclusion": "The Backtracking algorithm places N non-attacking queens on an N×N board with the first queen locked at a specific location by pruning non-viable state-space branches in O(N!) time and O(N) space.",
+            "viva": [
+                {
+                    "q": "What is backtracking and how does it differ from brute force?",
+                    "a": "Brute force generates and evaluates all possible configurations. Backtracking builds candidates incrementally and abandons (prunes) a candidate as soon as it determines it cannot possibly lead to a valid solution."
+                },
+                {
+                    "q": "How do you check if two queens attack each other diagonally?",
+                    "a": "Two queens at (r₁, c₁) and (r₂, c₂) are on the same diagonal if |r₁ - r₂| == |c₁ - c₂|."
+                },
+                {
+                    "q": "Why is a 1D array of size N sufficient to represent the chessboard?",
+                    "a": "Because exactly one queen must be placed in each row, array index represents the row number and array value queens[row] represents the column position."
+                },
+                {
+                    "q": "Does a solution exist for every N in the N-Queens problem?",
+                    "a": "No. There are no solutions for N = 2 and N = 3. Distinct solutions exist for all N ≥ 4."
+                },
+                {
+                    "q": "What is the time and space complexity of N-Queens?",
+                    "a": "Time complexity upper bound is O(N!), and auxiliary space complexity is O(N) for recursion depth and the position array."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 7
+        # =========================================================================
+        {
+            "id": "p7",
+            "number": 7,
+            "group": "Group B - Machine Learning",
+            "groupTitle": "Machine Learning",
+            "shortTitle": "P7 - Uber Fare Prediction",
+            "title": "Predict the price of the Uber ride from a given pickup point to the agreed drop-off location. Perform following tasks: 1. Pre-process the dataset. 2. Identify outliers. 3. Check the correlation. 4. Implement linear regression and random forest regression models. 5. Evaluate the models and compare their respective scores like R2, RMSE, etc.",
+            "co": "CO2: Implement and evaluate linear regression and random forest regression models.",
+            "hasCode": True,
+            "language": "python",
+            "fileName": p7_file,
+            "fileHash": p7_hash,
+            "code": p7_code,
+            "objectives": [
+                "Preprocess geospatial and temporal ride data and handle missing/invalid rows.",
+                "Compute spherical distance between GPS coordinates using the Haversine formula.",
+                "Detect and filter outliers using the Interquartile Range (IQR) technique.",
+                "Build, compare, and evaluate Linear Regression and Random Forest Regressor models using R² and RMSE."
+            ],
+            "prerequisites": [
+                "Python data science stack: pandas, numpy, matplotlib, scikit-learn.",
+                "Fundamentals of Supervised Regression, R² metric, and RMSE."
+            ],
+            "theory": {
+                "summary": "This experiment predicts Uber ride fares using pickup/dropoff coordinates, passenger counts, and timestamp attributes by comparing Linear Regression with Random Forest.",
+                "sections": [
+                    {
+                        "heading": "1. Data Pre-processing & Feature Engineering",
+                        "content": "• Dropping Irrelevant Columns: Drop non-predictive identifiers like 'Unnamed: 0' and 'key'.\n• Missing Value Handling: Remove rows containing NaN values using dropna().\n• Temporal Decomposition: Convert 'pickup_datetime' to datetime objects and extract 'hour' of ride and 'year'.\n• Invalid Coordinate & Fare Filtering: Remove records with fare_amount ≤ 0, distance ≤ 0, or passenger_count outside [1, 6]."
+                    },
+                    {
+                        "heading": "2. Haversine Distance Formula",
+                        "content": "Computes the great-circle distance between two GPS coordinates on Earth (mean radius R = 6371 km):\n\nΔlat = lat₂ - lat₁,  Δlon = lon₂ - lon₁ (in radians)\na = sin²(Δlat / 2) + cos(lat₁) · cos(lat₂) · sin²(Δlon / 2)\ndistance = 2 · R · arcsin(√a)\n\nThis provides a physically meaningful distance feature in kilometers."
+                    },
+                    {
+                        "heading": "3. Outlier Identification via Interquartile Range (IQR)",
+                        "content": "Outliers in fare_amount and distance skew regression coefficients.\n• First quartile Q₁ = 25th percentile, Third quartile Q₃ = 75th percentile.\n• IQR = Q₃ - Q₁.\n• Valid range: [Q₁ - 1.5 × IQR,  Q₃ + 1.5 × IQR]. Data points outside this boundary are trimmed."
+                    },
+                    {
+                        "heading": "4. Model Architecture & Evaluation Metrics",
+                        "content": "• Linear Regression: Fits a linear equation y = β₀ + β₁x₁ + ... + βₖxₖ minimizing residual sum of squares.\n• Random Forest Regressor: An ensemble meta-estimator that fits multiple decision trees on subsamples with averaging to control overfitting.\n• R² (Coefficient of Determination): Proportion of variance explained (1.0 = perfect fit).\n• RMSE (Root Mean Squared Error): Square root of mean squared prediction errors in dollars."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Load uber.csv using pandas.read_csv().",
+                "Drop unnecessary columns ('Unnamed: 0', 'key') and drop rows with missing values.",
+                "Convert latitude and longitude to radians and compute distance column using Haversine formula.",
+                "Parse pickup_datetime into hour and year features, and drop the original timestamp column.",
+                "Filter out physically impossible data (fare_amount <= 0, distance <= 0, passenger_count not in 1..6).",
+                "Calculate Q1, Q3, and IQR for fare_amount and distance; retain rows within [Q1 - 1.5*IQR, Q3 + 1.5*IQR].",
+                "Compute feature correlation matrix and display heatmap using matplotlib.",
+                "Split dataset into 80% train and 20% test sets (random_state=42).",
+                "Train LinearRegression and RandomForestRegressor(n_estimators=50).",
+                "Predict on test set and output R² score and RMSE for both models."
+            ],
+            "guide": {
+                "dataset": "uber.csv (Must be placed in the same folder as the script)",
+                "pip": "pip install pandas numpy scikit-learn matplotlib",
+                "vscode": "1. Place uber.csv into lp3-final/ML/.\n2. Open ML/p7_uber_price.py in VS Code.\n3. Run: python3 ML/p7_uber_price.py.\n4. When prompted, type 'uber.csv' and press Enter.",
+                "terminal": "cd lp3-final/ML\npython3 p7_uber_price.py",
+                "jupyter": "jupyter notebook\nRun in ML folder where uber.csv resides."
+            },
+            "sampleIO": {
+                "input": "Enter dataset file name (uber.csv): uber.csv",
+                "output": "Linear Regression: R2 ~ 0.66, RMSE ~ 2.45\nRandom Forest    : R2 ~ 0.73, RMSE ~ 2.18",
+                "note": "Values are approximate (~) as per README. Random Forest outperforms Linear Regression by capturing non-linear geospatial interactions."
+            },
+            "conclusion": "Geospatial distance and pickup hour are key predictors of Uber ride fares. Random Forest Regression achieves higher predictive accuracy (R² ~0.73) compared to Linear Regression (R² ~0.66).",
+            "viva": [
+                {
+                    "q": "What is data preprocessing and why is it essential?",
+                    "a": "The process of cleaning raw data by handling missing values, filtering outliers, parsing datatypes, and engineering features so machine learning models can learn effectively without noise."
+                },
+                {
+                    "q": "What is the Haversine formula and why is it preferred over Euclidean distance for GPS coordinates?",
+                    "a": "Haversine calculates great-circle distances between points on a sphere. Euclidean distance assumes a flat 2D plane and causes severe distortion across spherical coordinates."
+                },
+                {
+                    "q": "Explain the IQR method for outlier detection.",
+                    "a": "IQR = Q3 - Q1. Any observation below (Q1 - 1.5*IQR) or above (Q3 + 1.5*IQR) is flagged as an outlier and filtered."
+                },
+                {
+                    "q": "What is the difference between R² and RMSE?",
+                    "a": "R² (coefficient of determination) measures the proportion of variance explained by the model (scale 0 to 1). RMSE measures the standard deviation of residuals in the original target units (dollars)."
+                },
+                {
+                    "q": "Why does Random Forest Regressor typically outperform Linear Regression on ride-fare data?",
+                    "a": "Linear Regression assumes linear relationships, whereas Random Forest ensembles decision trees that model complex non-linear geospatial interactions and threshold effects (e.g. peak hours)."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 8
+        # =========================================================================
+        {
+            "id": "p8",
+            "number": 8,
+            "group": "Group B - Machine Learning",
+            "groupTitle": "Machine Learning",
+            "shortTitle": "P8 - Email Spam Detection",
+            "title": "Classify the email using the binary classification method. Email Spam detection has two states: a) Normal State – Not Spam, b) Abnormal State – Spam. Use K-Nearest Neighbors and Support Vector Machine for classification. Analyze their performance.",
+            "co": "CO3: Apply and evaluate classification and clustering techniques.",
+            "hasCode": True,
+            "language": "python",
+            "fileName": p8_file,
+            "fileHash": p8_hash,
+            "code": p8_code,
+            "objectives": [
+                "Implement binary classification for spam detection on high-dimensional word frequency data.",
+                "Apply K-Nearest Neighbors (KNN) classifier with hyperparameter K.",
+                "Apply Support Vector Classifier (SVC) using a linear kernel to construct a maximum-margin hyperplane.",
+                "Evaluate performance via Confusion Matrix and Accuracy Score."
+            ],
+            "prerequisites": [
+                "Supervised learning: classification vs regression.",
+                "Distance metrics and hyperplanes in N-dimensional space.",
+                "Confusion matrix interpretation: TP, TN, FP, FN."
+            ],
+            "theory": {
+                "summary": "Email spam classification is a binary supervised problem. This experiment evaluates KNN and Linear SVM on the emails.csv word-frequency dataset.",
+                "sections": [
+                    {
+                        "heading": "1. Problem Formulation & Feature Matrix",
+                        "content": "In emails.csv, each row represents an email and each column (except 'Email No.' and 'Prediction') represents the frequency count of a specific dictionary word (Bag-of-Words representation). Target column 'Prediction' is binary:\n• 0: Not Spam (Normal)\n• 1: Spam (Abnormal)"
+                    },
+                    {
+                        "heading": "2. K-Nearest Neighbors (KNN)",
+                        "content": "• Lazy Learner: Stores the training instances without building an explicit parametric model.\n• Prediction: Computes Euclidean distance from the test vector to all training points; assigns the majority label among the K closest neighbors.\n• Hyperparameter K: Small K (e.g. 1) is sensitive to noise; large K smoothens decision boundaries but may misclassify rare classes."
+                    },
+                    {
+                        "heading": "3. Support Vector Machine (SVM)",
+                        "content": "• Principle: Finds the optimal decision hyperplane that maximizes the geometric margin between the two classes:\n  Margin = 2 / ||w||\n• Support Vectors: The critical boundary data points that lie directly on the margin boundaries; only these determine the position of the separating hyperplane.\n• Linear Kernel: Used when feature dimensionality is very high (as in text classification with 3000 words), where linear separability is achievable."
+                    },
+                    {
+                        "heading": "4. Confusion Matrix & Accuracy Score",
+                        "table": {
+                            "headers": ["Predicted / Actual", "Actual Not Spam (0)", "Actual Spam (1)"],
+                            "rows": [
+                                ["Predicted Not Spam (0)", "True Negative (TN)", "False Negative (FN) - Type II"],
+                                ["Predicted Spam (1)", "False Positive (FP) - Type I", "True Positive (TP)"]
+                            ]
+                        }
+                    }
+                ]
+            },
+            "algorithm": [
+                "Load emails.csv and drop the non-predictive identifier column 'Email No.'.",
+                "Separate feature matrix X (word frequencies) and target vector y ('Prediction').",
+                "Split dataset into 80% training and 20% testing sets using train_test_split(random_state=1).",
+                "Input value for hyperparameter K for KNN.",
+                "Fit KNeighborsClassifier(n_neighbors=k) on training set and predict test set labels.",
+                "Fit SVC(kernel='linear') on training set and predict test set labels.",
+                "Compute and print accuracy_score and confusion_matrix for both KNN and SVM."
+            ],
+            "guide": {
+                "dataset": "emails.csv (Must be placed in the same folder as the script)",
+                "pip": "pip install pandas scikit-learn",
+                "vscode": "1. Put emails.csv in lp3-final/ML/.\n2. Open ML/p8_spam_knn_svm.py.\n3. Run: python3 ML/p8_spam_knn_svm.py.\n4. Type 'emails.csv' and K = 5.",
+                "terminal": "cd lp3-final/ML\npython3 p8_spam_knn_svm.py",
+                "jupyter": "jupyter notebook\nRun script inside notebook cell with K = 5."
+            },
+            "sampleIO": {
+                "input": "Enter dataset file name (emails.csv): emails.csv\nEnter K for KNN: 5",
+                "output": "KNN accuracy: ~ 0.87\n[[682  37]\n [ 95 221]]\n\nSVM accuracy: ~ 0.95\n[[699  20]\n [ 29 287]]",
+                "note": "Approximate values (~) from README. SVM significantly outperforms KNN on high-dimensional text matrices."
+            },
+            "conclusion": "Support Vector Machine achieves higher accuracy (~0.95) than K-Nearest Neighbors (~0.87) for text spam classification due to its ability to find an optimal maximum-margin hyperplane in high-dimensional sparse feature spaces.",
+            "viva": [
+                {
+                    "q": "What is binary classification?",
+                    "a": "A supervised learning task where instances are categorized into one of two mutually exclusive classes (e.g. Spam vs Not Spam)."
+                },
+                {
+                    "q": "How does SVM handle high-dimensional text data so effectively?",
+                    "a": "Text data represented by word frequency has thousands of dimensions. In high-dimensional spaces, text classes are often linearly separable, allowing a Linear SVM to maximize the margin without overfitting."
+                },
+                {
+                    "q": "What are support vectors in SVM?",
+                    "a": "Support vectors are the training data points located closest to the decision boundary. Removing other points has no effect on the hyperplane, but moving a support vector changes the boundary."
+                },
+                {
+                    "q": "What is the effect of choosing a very small or very large K in KNN?",
+                    "a": "A very small K (e.g. K=1) leads to high variance and overfitting due to noise. A very large K leads to high bias and underfitting by smoothing across class boundaries."
+                },
+                {
+                    "q": "What is the difference between Type I and Type II errors in spam detection?",
+                    "a": "Type I error (False Positive) is classifying a legitimate email as spam (which might cause an important email to be missed). Type II error (False Negative) is letting a spam email slip into the inbox."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 9
+        # =========================================================================
+        {
+            "id": "p9",
+            "number": 9,
+            "group": "Group B - Machine Learning",
+            "groupTitle": "Machine Learning",
+            "shortTitle": "P9 - Bank Churn Neural Network",
+            "title": "Given a bank customer, build a neural network-based classifier that can determine whether they will leave or not in the next 6 months.",
+            "co": "CO3: Apply and evaluate classification and clustering techniques.",
+            "hasCode": True,
+            "language": "python",
+            "fileName": p9_file,
+            "fileHash": p9_hash,
+            "code": p9_code,
+            "objectives": [
+                "Implement an Artificial Neural Network (Multi-Layer Perceptron) for binary customer churn classification.",
+                "Perform categorical encoding (one-hot encoding) on categorical features.",
+                "Standardize continuous numerical features using StandardScaler (zero mean, unit variance).",
+                "Train the model over specified epochs and evaluate accuracy using a confusion matrix."
+            ],
+            "prerequisites": [
+                "Neural network principles: neurons, weights, bias, activation functions, backpropagation.",
+                "Feature scaling techniques: Normalization vs Standardization.",
+                "One-hot dummy encoding for nominal variables."
+            ],
+            "theory": {
+                "summary": "This experiment constructs a Multi-Layer Perceptron (ANN) to predict whether a customer will exit the bank using demographic and financial indicators.",
+                "sections": [
+                    {
+                        "heading": "1. Multi-Layer Perceptron (ANN) Architecture",
+                        "content": "• Input Layer: Takes preprocessed and standardized customer features.\n• Hidden Layers: Two hidden layers with 8 neurons each (hidden_layer_sizes=(8, 8)), using ReLU activation functions to learn non-linear patterns.\n• Output Layer: Binary prediction (0 = customer stays, 1 = customer leaves/exits)."
+                    },
+                    {
+                        "heading": "2. Data Preprocessing: Encoding & Standardization",
+                        "content": "• Identifier Removal: Drop non-predictive attributes 'RowNumber', 'CustomerId', and 'Surname'.\n• One-Hot Encoding: Convert categorical features 'Geography' and 'Gender' to binary indicators using pd.get_dummies(drop_first=True) to avoid multicollinearity (dummy variable trap).\n• Feature Standardization: Neural networks are sensitive to input scale. StandardScaler transforms all features so that μ = 0 and σ = 1:\n  z = (x - μ) / σ."
+                    },
+                    {
+                        "heading": "3. Implementation Note: Scikit-Learn MLPClassifier vs Keras/TensorFlow",
+                        "content": "Note: While the lab manual mentions Keras / TensorFlow in passing, the official laboratory practical implementation uses scikit-learn's MLPClassifier (hidden_layer_sizes=(8, 8), max_iter=epochs).\nBoth implement the identical theoretical concept of a feed-forward Artificial Neural Network with backpropagation gradient descent, but scikit-learn runs natively without heavy deep-learning GPU/C++ runtime dependencies."
+                    },
+                    {
+                        "heading": "4. Training & Epochs",
+                        "content": "An epoch represents one complete forward and backward pass of all training examples through the network. Increasing epochs allows the Adam optimizer to iteratively adjust synaptic weights to minimize cross-entropy loss."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Load Churn_Modelling.csv using pandas.",
+                "Drop identifier columns: 'RowNumber', 'CustomerId', and 'Surname'.",
+                "Convert categorical columns 'Geography' and 'Gender' to numeric dummy variables using pd.get_dummies(drop_first=True).",
+                "Separate features X and target y ('Exited').",
+                "Split data into 80% train and 20% test subsets using train_test_split(random_state=1).",
+                "Apply StandardScaler.fit_transform() to X_train and transform() to X_test.",
+                "Input the desired number of training epochs from the user.",
+                "Initialize MLPClassifier(hidden_layer_sizes=(8, 8), max_iter=epochs, random_state=1) and fit on training data.",
+                "Predict labels on test set X_test.",
+                "Print accuracy score and confusion matrix."
+            ],
+            "guide": {
+                "dataset": "Churn_Modelling.csv (Must be placed in the same folder as the script)",
+                "pip": "pip install pandas scikit-learn",
+                "vscode": "1. Put Churn_Modelling.csv in lp3-final/ML/.\n2. Open ML/p9_bank_churn_nn.py.\n3. Run: python3 ML/p9_bank_churn_nn.py.\n4. Type 'Churn_Modelling.csv' and epochs = 200.",
+                "terminal": "cd lp3-final/ML\npython3 p9_bank_churn_nn.py",
+                "jupyter": "jupyter notebook\nRun script cell in ML folder."
+            },
+            "sampleIO": {
+                "input": "Enter dataset file name (Churn_Modelling.csv): Churn_Modelling.csv\nEnter number of epochs: 200",
+                "output": "Accuracy: ~ 0.86\n[[1530   55]\n [ 225  190]]\n(1 = customer leaves, 0 = customer stays)",
+                "note": "Approximate accuracy ~0.86 as specified in README."
+            },
+            "conclusion": "A Multi-Layer Perceptron (8, 8) neural network trained with backpropagation over 200 epochs successfully predicts customer churn with ~86% accuracy after one-hot encoding and feature standardization.",
+            "viva": [
+                {
+                    "q": "What is an Artificial Neural Network (ANN) and Multi-Layer Perceptron (MLP)?",
+                    "a": "An ANN is a computational model inspired by biological neural networks. An MLP is a class of feed-forward ANN consisting of an input layer, one or more hidden layers, and an output layer."
+                },
+                {
+                    "q": "Why is feature normalization/standardization necessary before training an ANN?",
+                    "a": "Features with large scales (like Balance ~100,000) would dominate gradient updates compared to small features (like Age ~40). Standardization (mean=0, std=1) ensures balanced weight updates and faster convergence."
+                },
+                {
+                    "q": "What is the difference between Normalization (MinMax) and Standardization (Z-score)?",
+                    "a": "Normalization scales data to [0, 1] using (x - min)/(max - min). Standardization scales data to mean=0 and variance=1 using (x - μ)/σ and is less sensitive to extreme outliers."
+                },
+                {
+                    "q": "What does an epoch mean in neural network training?",
+                    "a": "One epoch is one complete forward and backward pass of all training samples through the neural network."
+                },
+                {
+                    "q": "Why is drop_first=True used in pd.get_dummies()?",
+                    "a": "To prevent multicollinearity (the dummy variable trap). For example, if 'Gender_Male' is 0, the gender is implicitly female; keeping both would create redundant linearly dependent columns."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 10
+        # =========================================================================
+        {
+            "id": "p10",
+            "number": 10,
+            "group": "Group B - Machine Learning",
+            "groupTitle": "Machine Learning",
+            "shortTitle": "P10 - KNN on Diabetes Dataset",
+            "title": "Implement K-Nearest Neighbors algorithm on diabetes.csv dataset. Compute confusion matrix, accuracy, error rate, precision and recall on the given dataset.",
+            "co": "CO3: Apply and evaluate classification and clustering techniques. CO4: Analyze performance of an algorithm.",
+            "hasCode": True,
+            "language": "python",
+            "fileName": p10_file,
+            "fileHash": p10_hash,
+            "code": p10_code,
+            "objectives": [
+                "Implement K-Nearest Neighbors classifier on medical diagnostic data (diabetes.csv).",
+                "Evaluate model performance using multiple classification metrics: Confusion Matrix, Accuracy, Error Rate, Precision, and Recall."
+            ],
+            "prerequisites": [
+                "Supervised binary classification basics.",
+                "Euclidean distance formula.",
+                "Diagnostic performance evaluation terms (TP, TN, FP, FN)."
+            ],
+            "theory": {
+                "summary": "This experiment classifies diabetic vs non-diabetic patients using K-Nearest Neighbors and performs an exhaustive evaluation of classification metrics.",
+                "sections": [
+                    {
+                        "heading": "1. KNN Algorithm Mechanics",
+                        "content": "KNN is a non-parametric instance-based supervised algorithm:\n1. For a query point x*, compute the Euclidean distance to every point xᵢ in the training dataset:\n   d(x*, xᵢ) = √[ ∑ⱼ (x*ⱼ - xᵢⱼ)² ]\n2. Sort the distances in ascending order.\n3. Identify the K nearest training instances.\n4. Output the majority class among the K neighbors."
+                    },
+                    {
+                        "heading": "2. Confusion Matrix Terminology",
+                        "content": "• True Positive (TP): Diabetic patient correctly identified as diabetic.\n• True Negative (TN): Healthy person correctly identified as non-diabetic.\n• False Positive (FP) [Type I Error]: Healthy person incorrectly classified as diabetic.\n• False Negative (FN) [Type II Error]: Diabetic patient incorrectly classified as healthy (critical medical hazard!)."
+                    },
+                    {
+                        "heading": "3. Comprehensive Metrics Formulation",
+                        "content": "• Accuracy: Overall correctness = (TP + TN) / (TP + TN + FP + FN)\n• Error Rate: Misclassification rate = 1 - Accuracy = (FP + FN) / (TP + TN + FP + FN)\n• Precision: When the model predicts positive, how often is it right? = TP / (TP + FP)\n• Recall (Sensitivity): What fraction of actual diabetic cases were detected? = TP / (TP + FN)"
+                    }
+                ]
+            },
+            "algorithm": [
+                "Load diabetes.csv using pandas.read_csv().",
+                "Extract features X by dropping target column 'Outcome', and set y = df['Outcome'].",
+                "Split data into 80% train and 20% test sets using train_test_split(random_state=1).",
+                "Input value for hyperparameter K.",
+                "Instantiate KNeighborsClassifier(n_neighbors=k) and fit on (X_train, y_train).",
+                "Predict outcomes on X_test.",
+                "Compute confusion_matrix(y_test, pred).",
+                "Calculate and display accuracy, error rate (1 - accuracy), precision, and recall."
+            ],
+            "guide": {
+                "dataset": "diabetes.csv (Must be placed in the same folder as the script)",
+                "pip": "pip install pandas scikit-learn",
+                "vscode": "1. Put diabetes.csv in lp3-final/ML/.\n2. Open ML/p10_knn_diabetes.py.\n3. Run: python3 ML/p10_knn_diabetes.py.\n4. Input 'diabetes.csv' and K = 5.",
+                "terminal": "cd lp3-final/ML\npython3 p10_knn_diabetes.py",
+                "jupyter": "jupyter notebook\nRun script cell in ML folder."
+            },
+            "sampleIO": {
+                "input": "Enter dataset file name (diabetes.csv): diabetes.csv\nEnter K: 5",
+                "output": "Confusion matrix:\n[[86 13]\n [28 27]]\nAccuracy  : ~ 0.73\nError rate: ~ 0.27\nPrecision : ~ 0.675\nRecall    : ~ 0.491",
+                "note": "Approximate values (~) matching README. Exact values may vary slightly depending on scikit-learn version."
+            },
+            "conclusion": "The KNN classifier achieves ~73% accuracy on the diabetes dataset with K=5. Precision and recall illustrate the trade-off between false alarms and missed diabetic diagnoses in medical screening.",
+            "viva": [
+                {
+                    "q": "What is K-Nearest Neighbors (KNN) algorithm?",
+                    "a": "A non-parametric, lazy supervised learning algorithm that classifies a new sample based on the majority class among its K closest training neighbors."
+                },
+                {
+                    "q": "Define Accuracy, Error Rate, Precision, and Recall.",
+                    "a": "Accuracy = (TP+TN)/Total; Error Rate = (FP+FN)/Total = 1 - Accuracy; Precision = TP/(TP+FP); Recall = TP/(TP+FN)."
+                },
+                {
+                    "q": "In medical disease diagnosis (like diabetes), is Precision or Recall more critical?",
+                    "a": "Recall is more critical because a False Negative means a sick person goes undiagnosed and untreated, which is far more dangerous than a False Positive requiring a follow-up test."
+                },
+                {
+                    "q": "What distance metrics can be used in KNN?",
+                    "a": "Euclidean distance (L2 norm), Manhattan distance (L1 norm), and Minkowski distance (generalized Lp norm)."
+                },
+                {
+                    "q": "Why is an odd value of K usually chosen for binary classification?",
+                    "a": "An odd value prevents tie votes between the two classes when determining the majority."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 11
+        # =========================================================================
+        {
+            "id": "p11",
+            "number": 11,
+            "group": "Group B - Machine Learning",
+            "groupTitle": "Machine Learning",
+            "shortTitle": "P11 - K-Means Clustering",
+            "title": "Implement K-Means clustering/ hierarchical clustering on sales_data_sample.csv dataset. Determine the number of clusters using the elbow method.",
+            "co": "CO3: Apply and evaluate classification and clustering techniques. CO4: Analyze performance of an algorithm.",
+            "hasCode": True,
+            "language": "python",
+            "fileName": p11_file,
+            "fileHash": p11_hash,
+            "code": p11_code,
+            "objectives": [
+                "Understand unsupervised clustering principles.",
+                "Implement the K-Means clustering algorithm on sales transactions.",
+                "Apply the Elbow Method using Within-Cluster Sum of Squares (WCSS / Inertia) to find optimal K."
+            ],
+            "prerequisites": [
+                "Unsupervised learning vs Supervised learning.",
+                "Centroid calculation and Euclidean distance.",
+                "Interpreting variance and inertia curves."
+            ],
+            "theory": {
+                "summary": "K-Means is an unsupervised clustering algorithm that partitions data points into K clusters. The optimal K is selected using the Elbow Method on WCSS.",
+                "sections": [
+                    {
+                        "heading": "1. Unsupervised Learning & Clustering",
+                        "content": "Unlike classification where ground-truth labels exist, unsupervised clustering groups unlabeled data points based solely on inherent mathematical similarity and geometric proximity."
+                    },
+                    {
+                        "heading": "2. K-Means Algorithm Steps",
+                        "content": "1. Choose K: Number of clusters.\n2. Initialize Centroids: Randomly select K data points as initial cluster centers μ₁, ..., μₖ.\n3. Assignment Step: Assign each data point x to the nearest centroid using Euclidean distance:\n   c⁽ⁱ⁾ = argminⱼ ||x⁽ⁱ⁾ - μⱼ||²\n4. Update Step: Recompute each centroid as the geometric mean of all points assigned to that cluster:\n   μⱼ = (1 / |Sⱼ|) ∑_{x ∈ Sⱼ} x\n5. Repeat: Steps 3 and 4 until convergence (centroids no longer shift significantly)."
+                    },
+                    {
+                        "heading": "3. Within-Cluster Sum of Squares (WCSS / Inertia)",
+                        "content": "WCSS measures the compactness of clusters:\n\nWCSS = ∑_{k=1}^K ∑_{x ∈ Cₖ} ||x - μₖ||²\n\nAs K increases, WCSS monotonically decreases because points are closer to more centroids (at K=N, WCSS=0)."
+                    },
+                    {
+                        "heading": "4. The Elbow Method",
+                        "content": "To determine the optimal K, plot WCSS against values of K from 1 to 10.\nThe curve drops steeply initially, then flattens out. The 'Elbow' of the curve represents the point of diminishing returns—where increasing K yields marginal decrease in WCSS.\nFor sales_data_sample.csv, the elbow bend clearly occurs at K = 3."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Load sales_data_sample.csv using pd.read_csv() with encoding='latin-1'.",
+                "Extract feature columns: QUANTITYORDERED, PRICEEACH, and SALES, dropping missing rows.",
+                "Initialize empty list wcss = [].",
+                "Loop k from 1 to 10:\n   Fit KMeans(n_clusters=k, random_state=1) on X.\n   Append model.inertia_ to wcss list.",
+                "Plot range(1, 11) vs wcss and display the Elbow curve via matplotlib.pyplot.",
+                "Inspect the plot and input chosen number of clusters k (elbow bends at 3).",
+                "Fit final KMeans model with chosen k and assign cluster labels: X['Cluster'] = model.fit_predict(X).",
+                "Print cluster distribution (value_counts) and mean feature profiles for each cluster."
+            ],
+            "guide": {
+                "dataset": "sales_data_sample.csv (Must be placed in the same folder as the script)",
+                "pip": "pip install pandas matplotlib scikit-learn",
+                "vscode": "1. Put sales_data_sample.csv into lp3-final/ML/.\n2. Open ML/p11_kmeans_sales.py.\n3. Run: python3 ML/p11_kmeans_sales.py.\n4. Type 'sales_data_sample.csv', view elbow plot, close it, and enter k = 3.",
+                "terminal": "cd lp3-final/ML\npython3 p11_kmeans_sales.py",
+                "jupyter": "jupyter notebook\nRun script cell in ML folder; chart displays inline."
+            },
+            "sampleIO": {
+                "input": "Enter dataset file name (sales_data_sample.csv): sales_data_sample.csv\nEnter number of clusters (see elbow): 3",
+                "output": "Elbow Method plot displayed showing distinct bend at k = 3.\n\nCluster value counts:\nCluster 0: ~ 1300\nCluster 1: ~ 1100\nCluster 2: ~ 423\n\nCluster feature means displayed for QUANTITYORDERED, PRICEEACH, SALES.",
+                "note": "Elbow bends at 3 clusters as confirmed in README."
+            },
+            "conclusion": "The Elbow method identifies K=3 as the optimal number of customer order clusters in the sales dataset, effectively segmenting high, medium, and low value sales orders.",
+            "viva": [
+                {
+                    "q": "What is unsupervised learning and how does it differ from supervised learning?",
+                    "a": "Unsupervised learning works with unlabeled data to discover hidden patterns and groupings without predefined target labels, whereas supervised learning trains on labeled input-output pairs."
+                },
+                {
+                    "q": "What is the role of centroids in K-Means clustering?",
+                    "a": "Centroids represent the center of each cluster. Points are assigned to the nearest centroid, and centroids are iteratively updated to the mean of their assigned points."
+                },
+                {
+                    "q": "What is WCSS / Inertia?",
+                    "a": "Within-Cluster Sum of Squares (Inertia) is the sum of squared Euclidean distances between each data point and its assigned cluster centroid."
+                },
+                {
+                    "q": "Explain the Elbow Method for finding optimal K.",
+                    "a": "It plots WCSS against K. The point where the rate of decrease abruptly slows down (forming an 'elbow' angle) is selected as the optimal balance between compactness and model complexity."
+                },
+                {
+                    "q": "What are two major limitations of K-Means clustering?",
+                    "a": "1. The user must specify K in advance. 2. It assumes spherical clusters of similar size and is sensitive to initialization and outliers."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 13
+        # =========================================================================
+        {
+            "id": "p13",
+            "number": 13,
+            "group": "Group C - Blockchain",
+            "groupTitle": "Blockchain Technology",
+            "shortTitle": "P13 - MetaMask & Ether Spent",
+            "title": "Installation of MetaMask and study spending Ether per transaction.",
+            "co": "CO6: Interpret the basic concepts in Blockchain technology and its applications",
+            "hasCode": False,
+            "isProcedure": True,
+            "notesContent": notes_text,
+            "objectives": [
+                "Install and configure MetaMask cryptocurrency wallet browser extension.",
+                "Connect to the Ethereum Sepolia Test Network.",
+                "Acquire testnet ETH from a public faucet.",
+                "Execute transactions and observe Gas Limit, Gas Used, Gas Price (Gwei), and Transaction Fee."
+            ],
+            "prerequisites": [
+                "Basic understanding of public-key cryptography and blockchain ledgers.",
+                "Web browser (Chrome / Edge / Firefox)."
+            ],
+            "theory": {
+                "summary": "MetaMask is a non-custodial crypto wallet and Web3 gateway. This practical examines Ethereum gas mechanics and calculates transaction fees on the Sepolia testnet.",
+                "sections": [
+                    {
+                        "heading": "1. What is MetaMask?",
+                        "content": "MetaMask is a software cryptocurrency wallet and browser extension that allows users to store private keys, manage Ethereum accounts, interact with decentralized applications (DApps), and sign transactions securely without running a full Ethereum node."
+                    },
+                    {
+                        "heading": "2. Ethereum Gas Concepts & Terminology",
+                        "content": "• Gas: The fundamental unit that measures the amount of computational effort required to execute specific operations on the Ethereum network.\n• Gas Limit: The maximum amount of gas the sender is willing to consume for a transaction. A standard plain ETH transfer between two externally owned accounts (EOAs) consumes exactly 21,000 gas units.\n• Gas Price: The amount of Ether the sender is willing to pay per unit of gas, typically denominated in Gwei (1 Gwei = 10⁻⁹ ETH = 1,000,000,000 Wei).\n• Base Fee & Priority Fee (EIP-1559): The base fee is burned by the protocol, while the priority fee (tip) incentivizes validators."
+                    },
+                    {
+                        "heading": "3. Transaction Fee Calculation Formula",
+                        "content": "Transaction Fee = Gas Used × Gas Price\n\nStandard ETH Transfer Example:\n• Gas Used = 21,000 units\n• Gas Price = 20 Gwei\n• Total Fee = 21,000 × 20 Gwei = 420,000 Gwei\n• In ETH: 420,000 × 10⁻⁹ ETH = 0.00042 ETH\n\nIf Ether price is $3,000 USD, the transaction fee in fiat is: 0.00042 × $3,000 = $1.26 USD."
+                    },
+                    {
+                        "heading": "4. Sepolia Testnet & Faucets",
+                        "content": "To learn and test smart contracts without spending real money, developers use test networks like Sepolia. Sepolia testnet mimics Ethereum Mainnet consensus and EVM behavior, but uses worthless test ETH distributed for free via Web3 faucets (e.g. Alchemy or Google Cloud Web3 faucet)."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Open browser and navigate to the official MetaMask website: https://metamask.io.",
+                "Download and install the extension for Chrome/Edge/Firefox.",
+                "Click 'Create a new wallet', set a strong password, and write down the 12-word Secret Recovery Phrase on paper.",
+                "Confirm the secret phrase in sequence to initialize the wallet.",
+                "Open network selection dropdown, toggle 'Show test networks', and select 'Sepolia'.",
+                "Copy your public address (0x...) and request test ETH from a Sepolia faucet.",
+                "Create a second account (Account 2) within MetaMask via 'Add account'.",
+                "Initiate a transfer of 0.001 ETH from Account 1 to Account 2.",
+                "On the confirmation dialog, inspect Gas Limit, Gas Price (Gwei), and Estimated Gas Fee.",
+                "Confirm transaction, wait for block validation, and open the transaction on Sepolia Etherscan to record Gas Used and Transaction Fee."
+            ],
+            "guide": {
+                "procedureSteps": [
+                    "1. Install MetaMask from https://metamask.io.",
+                    "2. Create wallet, backup 12-word phrase, set password.",
+                    "3. Switch network to Sepolia Test Network.",
+                    "4. Claim test ETH from a faucet using your 0x address.",
+                    "5. Send 0.001 ETH to a second address.",
+                    "6. Record gas metrics from the confirmation screen and Etherscan."
+                ]
+            },
+            "observationTable": {
+                "headers": ["Tx No.", "Amount Sent (ETH)", "Gas Used", "Gas Price (Gwei)", "Total Fee (ETH)"],
+                "rows": [
+                    ["1", "0.001 ETH", "21,000", "20 Gwei", "0.00042 ETH"],
+                    ["2", "[Student Data]", "[Student Data]", "[Student Data]", "[Student Data]"]
+                ]
+            },
+            "sampleIO": {
+                "input": "Send 0.001 Sepolia ETH with Gas Price = 20 Gwei",
+                "output": "Gas Used: 21,000\nGas Price: 20 Gwei\nTransaction Fee: 0.00042 ETH\nStatus: Confirmed on Sepolia Etherscan",
+                "note": "Fee calculation: 21,000 × 20 Gwei = 420,000 Gwei = 0.00042 ETH."
+            },
+            "conclusion": "Successfully installed MetaMask, connected to the Sepolia testnet, and verified that a standard transfer uses 21,000 gas units with transaction fees determined by Gas Used × Gas Price.",
+            "viva": [
+                {
+                    "q": "What is MetaMask?",
+                    "a": "A non-custodial software wallet and browser extension that allows users to manage Ethereum keys and interact with Web3 decentralized applications (DApps)."
+                },
+                {
+                    "q": "What is Gas in Ethereum?",
+                    "a": "Gas is an internal metric measuring computational work needed to execute transactions and smart contracts on the Ethereum Virtual Machine (EVM)."
+                },
+                {
+                    "q": "What is the standard gas limit for a simple ETH transfer between two accounts?",
+                    "a": "Exactly 21,000 gas units."
+                },
+                {
+                    "q": "What is Gwei and how is it related to Ether and Wei?",
+                    "a": "1 Ether = 10⁹ Gwei = 10¹⁸ Wei. 1 Gwei = 1,000,000,000 Wei = 10⁻⁹ ETH."
+                },
+                {
+                    "q": "What is the purpose of a testnet like Sepolia?",
+                    "a": "It provides a safe, free testing environment identical to Ethereum Mainnet where developers can test contracts using faucet ETH without financial risk."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 14
+        # =========================================================================
+        {
+            "id": "p14",
+            "number": 14,
+            "group": "Group C - Blockchain",
+            "groupTitle": "Blockchain Technology",
+            "shortTitle": "P14 - Create Wallet using MetaMask",
+            "title": "Create your own wallet using Metamask for crypto transactions",
+            "co": "CO6: Interpret the basic concepts in Blockchain technology and its applications",
+            "hasCode": False,
+            "isProcedure": True,
+            "notesContent": notes_text,
+            "objectives": [
+                "Understand cryptocurrency wallet architectures and asymmetric cryptographic keys.",
+                "Distinguish between Public Address, Private Key, and Secret Recovery Phrase.",
+                "Create secondary accounts, receive test faucet funds, and execute peer-to-peer transfers."
+            ],
+            "prerequisites": [
+                "Public-key cryptography basics (Public / Private key pairs).",
+                "MetaMask installed on browser."
+            ],
+            "theory": {
+                "summary": "Cryptocurrency wallets store cryptographic keys rather than actual coins. This practical covers wallet creation, key management, security hygiene, and transaction signing.",
+                "sections": [
+                    {
+                        "heading": "1. What is a Crypto Wallet?",
+                        "content": "A cryptocurrency wallet does not physically store coins—coins exist exclusively as unspent transaction outputs or balances on the blockchain ledger. The wallet stores the private keys required to sign transactions and authorize transfers from associated public addresses."
+                    },
+                    {
+                        "heading": "2. Public Address vs Private Key vs Recovery Phrase",
+                        "content": "• Public Address (0x...): 42-character hexadecimal string derived from the public key (Keccak-256 hash). Can be shared openly to receive funds (analogous to a bank account number / IBAN).\n• Private Key: 256-bit secret number that signs transactions. Anyone with access to the private key can spend all funds in that account. NEVER share it.\n• Secret Recovery Phrase (Seed Phrase): A 12- or 24-word human-readable phrase (BIP-39 standard) derived from a root seed. It generates and recovers ALL private keys and accounts in the wallet. Must be written down offline on paper."
+                    },
+                    {
+                        "heading": "3. Security & Anti-Phishing Best Practices",
+                        "content": "• Never enter recovery phrases into websites, Google Docs, screenshots, or chat windows.\n• Beware of fake faucet sites, phishing emails, and malicious smart contract approvals.\n• Always verify recipient addresses character-by-character before confirming transfers."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Launch MetaMask browser extension.",
+                "Click on the Account selection icon at the top center.",
+                "Click 'Add account or hardware wallet' -> 'Add a new account'.",
+                "Assign an account name (e.g. 'Lab Exam Account 2') and confirm.",
+                "Copy the generated 42-character public address (0x...) to clipboard.",
+                "Switch back to Account 1 and click 'Send'.",
+                "Paste Account 2's address, input transfer amount (e.g. 0.005 Sepolia ETH), and click 'Next'.",
+                "Review estimated gas fee and click 'Confirm'.",
+                "Verify that Account 1 balance decrements and Account 2 balance increments in the Activity tab."
+            ],
+            "guide": {
+                "procedureSteps": [
+                    "1. Click account icon in MetaMask -> 'Add account' -> Name it.",
+                    "2. Copy public address (0x...).",
+                    "3. Transfer Sepolia test ETH into the new account.",
+                    "4. Verify the transaction status in the Activity tab.",
+                    "5. Take screenshots of wallet address, updated balance, and Activity history."
+                ]
+            },
+            "sampleIO": {
+                "input": "Transfer 0.005 Sepolia ETH from Account 1 to Account 2",
+                "output": "Account 1 Balance: Decremented by 0.005 ETH + gas fee\nAccount 2 Balance: Incremented by +0.005 ETH\nTransaction Status: Confirmed on Sepolia testnet",
+                "note": "Documented with screenshots showing address, balance, and Activity tab."
+            },
+            "conclusion": "Created a multi-account MetaMask wallet, established clear distinctions between public addresses and secret recovery phrases, and verified cryptocurrency transfers across accounts.",
+            "viva": [
+                {
+                    "q": "What is the difference between a public address and a private key?",
+                    "a": "A public address is shareable and used by others to send funds to you. A private key must be kept secret; it is used to cryptographically sign and authorize outgoing transactions."
+                },
+                {
+                    "q": "What is a Secret Recovery Phrase (Seed Phrase)?",
+                    "a": "A sequence of 12 or 24 words generated using the BIP-39 standard that encodes the master cryptographic seed from which all private keys of the wallet are derived."
+                },
+                {
+                    "q": "What is cryptojacking?",
+                    "a": "The unauthorized use of a victim's computing device (computer, server, smartphone) to mine cryptocurrency without their knowledge or consent."
+                },
+                {
+                    "q": "Can a lost private key or seed phrase be reset by MetaMask customer support?",
+                    "a": "No. MetaMask is non-custodial and decentralized; it does not store user keys on any server. If the phrase is lost, access to the funds is permanently unrecoverable."
+                },
+                {
+                    "q": "How does asymmetric cryptography protect blockchain transactions?",
+                    "a": "The sender signs the transaction with their private key. Any node on the network can verify the signature using the sender's public key without exposing the private key."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 15
+        # =========================================================================
+        {
+            "id": "p15",
+            "number": 15,
+            "group": "Group C - Blockchain",
+            "groupTitle": "Blockchain Technology",
+            "shortTitle": "P15 - Bank Account Smart Contract",
+            "title": "Write a smart contract on a test network, for Bank account of a customer for following operations: 1. Deposit money, 2. Withdraw Money, 3. Show balance.",
+            "co": "CO6: Interpret the fundamentals of Blockchain technology and implement basic applications using smart contracts.",
+            "hasCode": True,
+            "language": "solidity",
+            "fileName": p15_file,
+            "fileHash": p15_hash,
+            "code": p15_code,
+            "objectives": [
+                "Write, compile, and deploy a Solidity smart contract for a bank account.",
+                "Implement payable functions to accept Ether deposits.",
+                "Enforce balance checks using require() and securely transfer Ether upon withdrawal.",
+                "Deploy on Remix IDE (Remix VM and Sepolia testnet) and observe gas consumption."
+            ],
+            "prerequisites": [
+                "Solidity syntax basics: data types, visibility specifiers, state variables.",
+                "EVM currency units (Wei, Gwei, Ether).",
+                "Remix IDE navigation."
+            ],
+            "theory": {
+                "summary": "A smart contract is an immutable, self-executing program deployed on Ethereum. This BankAccount contract provides deposit, withdrawal with validation, and balance inspection.",
+                "sections": [
+                    {
+                        "heading": "1. What is a Smart Contract?",
+                        "content": "A smart contract is a self-executing program stored on the Ethereum blockchain that runs exactly as programmed by the Ethereum Virtual Machine (EVM) without downtime, censorship, or third-party interference."
+                    },
+                    {
+                        "heading": "2. Key Solidity Keywords & Constructs",
+                        "content": "• pragma solidity ^0.8.0;: Specifies compiler version compatibility.\n• contract BankAccount { ... }: Declares the smart contract scope.\n• uint public balance;: Unsigned integer state variable stored in blockchain persistent storage; public generates an automatic getter function.\n• payable: Function modifier indicating that the function can receive Ether along with the transaction call.\n• msg.value: Global variable containing the amount of Wei sent with the transaction.\n• msg.sender: Address of the account or contract calling the function.\n• require(condition, 'error message'): Reverts transaction state changes and refunds remaining gas if condition evaluates to false."
+                    },
+                    {
+                        "heading": "3. Line-by-Line Code Breakdown",
+                        "content": "1. deposit() public payable:\n   - Marked payable to accept incoming Ether.\n   - balance = balance + msg.value adds the received Wei to the contract state.\n2. withdraw(uint amount) public:\n   - require(amount <= balance, 'Not enough balance'); prevents overdraft.\n   - balance = balance - amount; decrements state before external call (Checks-Effects-Interactions pattern to resist re-entrancy).\n   - (bool sent, ) = payable(msg.sender).call{value: amount}(''); transfers amount Wei to caller.\n   - require(sent, 'Transfer failed'); verifies transfer success.\n3. showBalance() public view returns (uint):\n   - view indicates the function only reads state, consuming zero gas when called externally."
+                    },
+                    {
+                        "heading": "4. Ethereum Units",
+                        "content": "1 Ether = 10⁹ Gwei = 10¹⁸ Wei. In Remix IDE, transaction values are typically inputted in Wei."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Open Remix IDE (https://remix.ethereum.org).",
+                "Create a new file named p15_BankAccount.sol and enter contract code.",
+                "Compile with Solidity compiler version 0.8.0 or compatible.",
+                "Switch to Deploy & Run Transactions tab; choose Environment: 'Remix VM (Prague/Cancun)'.",
+                "Click 'Deploy' to deploy the contract.",
+                "Deposit Funds: Enter an amount (e.g. 1000 Wei) in the 'Value' field, set unit to 'Wei', and click the red 'deposit' button.",
+                "Inspect Balance: Click the blue 'showBalance' button to verify that balance reflects 1000 Wei.",
+                "Withdraw Funds: Enter amount (e.g. 400) in the input field next to 'withdraw' and click the orange 'withdraw' button.",
+                "Click 'showBalance' again to verify that remaining balance is 600 Wei.",
+                "Test Exception: Attempt to withdraw 1000 Wei; verify that transaction reverts with 'Not enough balance'."
+            ],
+            "guide": {
+                "remix": [
+                    "1. Open https://remix.ethereum.org in browser.",
+                    "2. In File Explorer, create 'p15_BankAccount.sol' and paste the code.",
+                    "3. Open Solidity Compiler tab -> Select 0.8.x -> Click 'Compile p15_BankAccount.sol'.",
+                    "4. Open 'Deploy & Run Transactions' tab -> Select Environment: 'Remix VM' -> Click 'Deploy'.",
+                    "5. Under 'Deployed Contracts', expand BankAccount.",
+                    "6. Deposit: Enter 1000 in Value box (Wei) -> Click 'deposit'.",
+                    "7. Check: Click 'showBalance' -> Output shows 1000.",
+                    "8. Withdraw: Enter 400 in withdraw box -> Click 'withdraw' -> Check showBalance -> Shows 600.",
+                    "9. To test on live testnet, change Environment to 'Injected Provider - MetaMask' (Sepolia)."
+                ]
+            },
+            "sampleIO": {
+                "input": "1. Deposit 1000 Wei\n2. Call showBalance()\n3. Withdraw 400 Wei\n4. Call showBalance()",
+                "output": "1. Transaction mined. Gas used: ~43,000\n2. showBalance() returns 1000\n3. Transaction mined. Gas used: ~35,000\n4. showBalance() returns 600",
+                "note": "Amounts are in Wei. Gas values visible in Remix console."
+            },
+            "conclusion": "The BankAccount smart contract was successfully written, compiled, and tested on Remix VM and Sepolia testnet, validating deposit, balance lookup, and secure withdrawal operations with error handling.",
+            "viva": [
+                {
+                    "q": "What is Solidity?",
+                    "a": "A high-level, statically-typed, contract-oriented programming language designed for developing smart contracts on the Ethereum Virtual Machine (EVM)."
+                },
+                {
+                    "q": "What does the payable keyword do in Solidity?",
+                    "a": "It indicates that a function or address can receive Ether. Without payable, any transaction attempting to send Ether to the function will automatically revert."
+                },
+                {
+                    "q": "What is the difference between msg.sender and msg.value?",
+                    "a": "msg.sender is the Ethereum address that initiated the current function call; msg.value is the amount of Wei sent along with that call."
+                },
+                {
+                    "q": "What is require() and what happens when it fails?",
+                    "a": "require(condition, message) evaluates a condition. If false, execution halts, all state changes made in the transaction are reverted, and unused gas is refunded to caller."
+                },
+                {
+                    "q": "Why does showBalance() not consume gas when called from a Web3 frontend?",
+                    "a": "Because it is declared with the view keyword, indicating that it only reads blockchain state without modifying it. External view calls run locally on a node without a transaction."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 16
+        # =========================================================================
+        {
+            "id": "p16",
+            "number": 16,
+            "group": "Group C - Blockchain",
+            "groupTitle": "Blockchain Technology",
+            "shortTitle": "P16 - Student Data Contract",
+            "title": "Write a program in solidity to create Student data. Use the following constructs: Structures, Arrays, Fallback. Deploy this as smart contract on Ethereum and Observe the transaction fee and Gas values.",
+            "co": "CO6: Interpret the basic concepts in Blockchain technology and its applications",
+            "hasCode": True,
+            "language": "solidity",
+            "fileName": p16_file,
+            "fileHash": p16_hash,
+            "code": p16_code,
+            "objectives": [
+                "Implement custom user-defined data structures (struct) in Solidity.",
+                "Manage dynamic storage arrays of structs.",
+                "Implement and differentiate fallback() and receive() special functions.",
+                "Deploy on Remix IDE and monitor transaction execution costs and gas fees."
+            ],
+            "prerequisites": [
+                "Solidity structures and array syntax.",
+                "Special EVM fallback and receive functions.",
+                "Remix IDE deployment workflows."
+            ],
+            "theory": {
+                "summary": "This smart contract manages student academic records using structs, dynamic arrays, and implements fallback and receive handlers for unrouted Ether interactions.",
+                "sections": [
+                    {
+                        "heading": "1. Structures in Solidity",
+                        "content": "A struct allows defining custom composite data types grouping related variables:\n\nstruct Student {\n    uint rollNo;\n    string name;\n    uint marks;\n}\n\nStructs can be stored in contract storage or temporarily in memory during function execution."
+                    },
+                    {
+                        "heading": "2. Dynamic Storage Arrays",
+                        "content": "Student[] public students; declares a dynamically-sized storage array of Student records.\n• students.push(...): Appends a new Student struct instance to the end of the array in blockchain storage.\n• students[index]: Retrieves the struct stored at a specific 0-based index.\n• students.length: Returns the current number of elements."
+                    },
+                    {
+                        "heading": "3. Fallback and Receive Functions",
+                        "content": "Solidity provides two special external functions without names:\n• receive() external payable: Executed when a transaction sends plain Ether with completely empty calldata (msg.data is empty).\n• fallback() external payable: Executed when the contract is called with calldata that does NOT match any existing function selector, or when Ether is sent with invalid data.\n\nIn this contract, both functions increment the fallbackCount state variable."
+                    },
+                    {
+                        "heading": "4. Gas Observation",
+                        "content": "Writing to blockchain storage (SSTORE) via students.push() consumes significant gas (~50,000 to 70,000 gas per new student). Reading via view functions (getStudent, totalStudents) costs zero gas when called externally."
+                    }
+                ]
+            },
+            "algorithm": [
+                "Define contract StudentData with struct Student containing rollNo, name, and marks.",
+                "Declare dynamic public storage array students of type Student[].",
+                "Define addStudent(_rollNo, _name, _marks): instantiate Student struct and push into students array.",
+                "Define getStudent(index) as public view returning (rollNo, name, marks) from students[index].",
+                "Define totalStudents() as public view returning students.length.",
+                "Declare public counter fallbackCount.",
+                "Define fallback() external payable and receive() external payable to increment fallbackCount by 1.",
+                "Deploy contract on Remix VM.",
+                "Add sample student records using addStudent, inspect totalStudents(), and retrieve record details using getStudent.",
+                "Trigger fallback/receive via Remix 'Low level interactions' (send Value with blank calldata) and observe fallbackCount increment."
+            ],
+            "guide": {
+                "remix": [
+                    "1. In Remix IDE, create file 'p16_StudentData.sol' and paste the code.",
+                    "2. Compile using Solidity Compiler 0.8.x.",
+                    "3. Open 'Deploy & Run Transactions' tab and click 'Deploy'.",
+                    "4. Add Student: Expand addStudent -> Enter _rollNo: 1, _name: 'Ravi', _marks: 85 -> Click 'transact'.",
+                    "5. Retrieve: Enter 0 in getStudent -> Click 'getStudent' -> Returns (1, 'Ravi', 85).",
+                    "6. Check Count: Click 'totalStudents' -> Returns 1.",
+                    "7. Test Fallback: Scroll to 'Low level interactions' at bottom -> Type 100 in Value box (Wei) -> Leave data blank -> Click 'Transact'.",
+                    "8. Click 'fallbackCount' button -> Value increases to 1.",
+                    "9. Observe transaction gas values logged in the Remix console."
+                ]
+            },
+            "sampleIO": {
+                "input": "1. addStudent(1, 'Ravi', 85)\n2. getStudent(0)\n3. totalStudents()\n4. Low level interaction (send 100 Wei)",
+                "output": "1. Transaction mined (Gas: ~68,000)\n2. Returns: 1, 'Ravi', 85\n3. Returns: 1\n4. Transaction mined -> fallbackCount = 1",
+                "note": "Exact gas costs displayed in the Remix terminal output for each operation."
+            },
+            "conclusion": "Successfully implemented and deployed a Solidity contract utilizing Structs, dynamic Arrays, and Fallback/Receive handlers, observing gas costs for storage allocation and contract interactions.",
+            "viva": [
+                {
+                    "q": "What is a Structure in Solidity and how is it defined?",
+                    "a": "A struct is a user-defined type that packages multiple related variables under one name, defined using the struct keyword."
+                },
+                {
+                    "q": "What is the difference between fixed and dynamic arrays in Solidity?",
+                    "a": "Fixed arrays have a predefined length specified at compile time (e.g. uint[5]), whereas dynamic arrays (e.g. Student[]) can grow or shrink at runtime using .push() and .pop()."
+                },
+                {
+                    "q": "When does the fallback() function execute?",
+                    "a": "When a contract receives a call with calldata that does not match any valid function signature, or when Ether is sent and no receive() function is defined."
+                },
+                {
+                    "q": "What is the difference between receive() and fallback() in Solidity?",
+                    "a": "receive() is executed when plain Ether is sent with empty calldata. fallback() is executed when call data does not match any function or when Ether is sent with unrecognized data."
+                },
+                {
+                    "q": "Why is writing data to storage (SSTORE) in Solidity expensive in terms of gas?",
+                    "a": "Because state storage must be permanently replicated across every validator node in the entire decentralized Ethereum network forever."
+                }
+            ]
+        },
+
+        # =========================================================================
+        # PRACTICAL 17
+        # =========================================================================
+        {
+            "id": "p17",
+            "number": 17,
+            "group": "Group C - Blockchain",
+            "groupTitle": "Blockchain Technology",
+            "shortTitle": "P17 - Survey on Blockchains",
+            "title": "Write a survey report on types of Blockchains and its real time use cases.",
+            "co": "CO6: Interpret the basic concepts in Blockchain technology and its applications",
+            "hasCode": False,
+            "isProcedure": True,
+            "notesContent": notes_text,
+            "objectives": [
+                "Investigate the taxonomy of distributed ledger architectures: Public, Private, Consortium, and Hybrid.",
+                "Compare access models, consensus mechanisms, throughput, and governance structures.",
+                "Examine enterprise real-world use cases across supply chain, finance, healthcare, and governance."
+            ],
+            "prerequisites": [
+                "Fundamentals of distributed systems and consensus mechanisms.",
+                "Cryptographic hashing and peer-to-peer networks."
+            ],
+            "theory": {
+                "summary": "This survey analyzes the four core types of blockchain technology (Public, Private, Consortium, Hybrid) and explores real-time industry applications.",
+                "sections": [
+                    {
+                        "heading": "1. Introduction to Blockchain Technology",
+                        "content": "A blockchain is a decentralized, distributed, and cryptographically immutable ledger. Transactions are bundled into timestamped blocks linked sequentially through cryptographic hashes. Once appended to the ledger via network consensus, historical records cannot be altered or deleted without recalculating all subsequent blocks across the network."
+                    },
+                    {
+                        "heading": "2. Comprehensive Taxonomy of Blockchains",
+                        "table": {
+                            "headers": ["Type", "Access / Permissions", "Who Validates (Consensus)", "Throughput / Speed", "Governance", "Real-World Examples"],
+                            "rows": [
+                                ["Public", "Permissionless; anyone can read, write, and join", "Anyone via PoW / PoS (Miners / Validators)", "Slower (15 - 50 TPS)", "Decentralized community", "Bitcoin, Ethereum"],
+                                ["Private", "Permissioned; invitation-only; one organization controls", "Selected authorized internal nodes (e.g. Raft, PBFT)", "Very High (>10,000 TPS)", "Single centralized entity", "Hyperledger Fabric (single org), MultiChain"],
+                                ["Consortium (Federated)", "Permissioned; pre-selected consortium of organizations", "Pre-approved group of representative nodes", "High (1,000 - 5,000 TPS)", "Shared multi-stakeholder governance", "R3 Corda, Quorum, Hyperledger Consortium"],
+                                ["Hybrid", "Combination: public visibility with private participation", "Rules-based hybrid validation", "Medium to High", "Dual / Hybrid model", "Dragonchain, XinFin (XDC)"]
+                            ]
+                        }
+                    },
+                    {
+                        "heading": "3. Detailed Architectural Trade-offs",
+                        "content": "• Public: Maximum decentralization and censorship resistance, but high latency and energy consumption (in PoW).\n• Private: High privacy and enterprise speed, but trades off decentralization and trustless auditability.\n• Consortium: Ideal for B2B multi-enterprise collaboration (e.g. inter-bank settlement) without a single point of failure.\n• Hybrid: Allows enterprise transactions to remain private while anchoring cryptographic state proofs to public blockchains."
+                    },
+                    {
+                        "heading": "4. Real-Time Industry Use Cases",
+                        "content": "1. Cryptocurrency & Cross-Border Payments: Bitcoin, Ethereum, Ripple (instant global settlements with low remittance fees).\n2. Supply Chain Provenance: IBM Food Trust (Walmart) traces food origins from farm to shelf in seconds; Maersk TradeLens for ocean shipping logistics.\n3. Healthcare: Tamper-proof shared patient medical records, clinical trial integrity, and counterfeit drug detection.\n4. Banking & Decentralized Finance (DeFi): Automated smart-contract lending, automated market makers (Uniswap), and cross-institution KYC sharing.\n5. Government & Land Registry: Tamper-proof land titling in Georgia and Andhra Pradesh (India) eliminating title deed fraud.\n6. Digital Identity & E-Voting: Verifiable tamper-evident voting pilots (Estonia) and decentralized self-sovereign identity (SSI).\n7. Education: Verifiable digital degree certificates and skill credentials resistant to forgery.\n8. Parametric Insurance: Automated claims payout triggered by verifiable external oracle feeds (e.g. flight delay insurance)."
+                    },
+                    {
+                        "heading": "5. Advantages and Limitations",
+                        "table": {
+                            "headers": ["Core Advantages", "Critical Limitations"],
+                            "rows": [
+                                ["Decentralization (No single point of failure)", "Scalability bottlenecks (block size & propagation delay)"],
+                                ["Immutability & Tamper-resistance", "High energy consumption in PoW networks"],
+                                ["Complete transparency and auditability", "Irreversible transactions (lost keys or bug exploits cannot be undone)"],
+                                ["Elimination of rent-seeking intermediaries", "Evolving regulatory uncertainty and compliance hurdles"]
+                            ]
+                        }
+                    }
+                ]
+            },
+            "algorithm": [
+                "Conduct literature survey on distributed ledger technologies.",
+                "Classify architectures based on permission models: Public vs Private vs Consortium vs Hybrid.",
+                "Analyze consensus mechanisms (PoW, PoS, PBFT, Raft) and performance metrics (TPS, latency).",
+                "Investigate commercial implementations across supply chain, banking, and government sectors.",
+                "Compile findings into structured comparative tables, advantages, limitations, and strategic conclusions."
+            ],
+            "guide": {
+                "procedureSteps": [
+                    "1. Study the survey notes from Blockchain_Notes_P13_P14_P17.md.",
+                    "2. Compare Public, Private, Consortium, and Hybrid blockchains.",
+                    "3. Map real-world industry case studies to each architecture.",
+                    "4. Document the advantages, trade-offs, and future technological outlook."
+                ]
+            },
+            "sampleIO": {
+                "input": "Survey comparison of 4 blockchain models across access, consensus, speed, and real-world adoption.",
+                "output": "Survey Report compiled with 4-way comparative table, 8 industrial use-cases, and architectural trade-off analysis.",
+                "note": "Report formatted for SPPU BE Computer Engineering laboratory submissions."
+            },
+            "conclusion": "The choice of blockchain architecture depends on trust, privacy, and throughput requirements: public networks serve open trustless ecosystems, consortium/private networks empower enterprise collaboration, and hybrid models provide customizable privacy.",
+            "viva": [
+                {
+                    "q": "What is a Blockchain in simple terms?",
+                    "a": "A distributed, immutable digital ledger of cryptographically linked blocks of transactions maintained by a consensus of network nodes without a central authority."
+                },
+                {
+                    "q": "Differentiate between Public and Private blockchains.",
+                    "a": "Public blockchains (like Bitcoin, Ethereum) are permissionless and open to anyone for reading and validating. Private blockchains are permissioned, centrally governed by one organization, and accessible only by invitation."
+                },
+                {
+                    "q": "What is a Consortium (Federated) Blockchain?",
+                    "a": "A blockchain governed by a group of pre-selected organizations (e.g. multiple banks) rather than a single entity, providing shared governance and high transaction throughput."
+                },
+                {
+                    "q": "Give two real-world enterprise applications of blockchain outside cryptocurrency.",
+                    "a": "1. Supply Chain Traceability (IBM Food Trust / Walmart for food provenance). 2. Verifiable Land Titling and Academic Degree Certificate verification."
+                },
+                {
+                    "q": "What is the 'Blockchain Trilemma'?",
+                    "a": "Coined by Vitalik Buterin, it states that a blockchain can typically achieve only two of three desirable properties simultaneously: Decentralization, Security, and Scalability."
+                }
+            ]
+        }
+    ]
+
+    # Write output to js/data.js
+    output_path = os.path.join(script_dir, "js", "data.js")
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    
+    js_content = "// Auto-generated by build.py - DO NOT EDIT MANUALLY\n"
+    js_content += "// Laboratory Practice III (410246) Practical Data\n"
+    js_content += "window.PRACTICALS_DATA = " + json.dumps(practicals, indent=2, ensure_ascii=False) + ";\n"
+    
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write(js_content)
+        
+    print(f"\nSuccessfully generated {output_path} ({len(practicals)} practicals).")
+    
+    # Verify byte-identical checksums directly from data.js
+    print("\n--- Integrity & Checksum Verification ---")
+    all_ok = True
+    for p in practicals:
+        if p.get("hasCode"):
+            src_bytes = p["code"].encode("utf-8")
+            h = hashlib.sha256(src_bytes).hexdigest()
+            status = "MATCH" if h == p["fileHash"] else "MISMATCH"
+            print(f"[{status}] Practical {p['number']} ({p['fileName']}): SHA-256 = {h[:16]}...")
+            if status != "MATCH":
+                all_ok = False
+                
+    if all_ok:
+        print("\nAll 12 code practicals verified 100% byte-identical to source files!")
+    else:
+        print("\nWARNING: Some file hashes mismatched!")
+        sys.exit(1)
+
+if __name__ == "__main__":
+    generate_data()

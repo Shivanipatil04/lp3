@@ -1,0 +1,75 @@
+/* SPPU Laboratory Practice III (410246)
+   Print Stylesheet for A4 Journal Submissions
+*/
+
+@media print {
+  /* Hide interactive / navigation elements */
+  #sidebar,
+  .top-navbar,
+  .sidebar-backdrop,
+  .pagination-nav,
+  .btn-code,
+  .code-actions,
+  .guide-tabs,
+  .btn-hamburger,
+  .btn-theme-toggle {
+    display: none !important;
+  }
+
+  /* Reset layout margins for full-page A4 */
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  #main-wrapper {
+    margin: 0 !important;
+    width: 100% !important;
+  }
+
+  #content {
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .practical-header-card,
+  .journal-section,
+  .hero-card,
+  .subject-card,
+  .instructions-box {
+    box-shadow: none !important;
+    border: 1px solid #cccccc !important;
+    border-radius: 4px !important;
+    page-break-inside: avoid;
+    margin-bottom: 1.5rem !important;
+    background: #ffffff !important;
+  }
+
+  .code-container {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .code-container pre,
+  .code-container code {
+    color: #0f172a !important;
+    background: transparent !important;
+    white-space: pre-wrap !important;
+    word-break: break-all !important;
+    font-size: 9pt !important;
+  }
+
+  .section-heading {
+    border-bottom: 1px solid #000000 !important;
+  }
+
+  .tab-content {
+    display: block !important;
+  }
+
+  /* Force page breaks between major practicals if printing all */
+  .practical-page {
+    page-break-after: always;
+  }
+}

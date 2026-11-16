@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Laboratory Practice III (410246) | LGNSCOE AY 2026-27</title>
+  
+  <!-- Offline Syntax Highlighting (Prism.js) -->
+  <link rel="stylesheet" id="prism-theme-link" href="vendor/prism-light.css">
+  <link rel="stylesheet" href="vendor/prism-line-numbers.css">
+  
+  <!-- Core Site & Print Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/print.css" media="print">
+</head>
+<body>
+  <div id="app-layout">
+    <!-- Mobile Backdrop -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- Left Collapsible Sidebar -->
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <div class="college-badge">Late G. N. Sapkal COE</div>
+        <div class="sidebar-title">
+          <span>📚</span>
+          <span>LP-III (410246)</span>
+        </div>
+        <div class="sidebar-sub">SPPU BE Comp Eng | AY 2026-27</div>
+      </div>
+
+      <!-- Search Box -->
+      <div class="sidebar-search">
+        <div class="search-input-wrap">
+          <svg class="search-icon" viewBox="0 0 24 24">
+            <path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"/>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search practicals (e.g. P1, KNN)..." autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+
+      <!-- Sidebar Practicals Navigation -->
+      <nav class="sidebar-nav" id="sidebar-nav-groups">
+        <!-- Rendered dynamically by app.js -->
+      </nav>
+
+      <!-- Sidebar Footer with Dark/Light Toggle -->
+      <div class="sidebar-footer">
+        <span>AY 2026–27</span>
+        <button class="btn-theme-toggle" id="theme-toggle-btn" type="button" title="Toggle theme">
+          <span id="theme-icon">🌙</span>
+          <span id="theme-text">Dark Mode</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Wrapper -->
+    <div id="main-wrapper">
+      <!-- Sticky Top Navbar -->
+      <header class="top-navbar">
+        <div class="nav-left">
+          <button class="btn-hamburger" id="hamburger-btn" type="button" title="Open navigation menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="breadcrumb-trail">
+            <span>LP-III</span> / <span id="breadcrumb-current">Home</span>
+          </div>
+        </div>
+        <div class="nav-right">
+          <button class="btn-action" onclick="window.print()" type="button" title="Print this practical for lab journal submission">
+            <span>🖨️</span> Print Journal
+          </button>
+          <a href="#/" class="btn-action" title="Home overview">
+            <span>🏠</span> Home
+          </a>
+        </div>
+      </header>
+
+      <!-- Main Dynamic Content Container -->
+      <main id="content">
+        <!-- Injected dynamically by app.js based on hash route -->
+      </main>
+    </div>
+  </div>
+
+  <!-- Offline Scripts -->
+  <script src="vendor/prism.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+# Ignore OS & node artifacts
+.DS_Store
+Thumbs.db
+node_modules/
+*.log
